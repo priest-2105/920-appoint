@@ -1,142 +1,187 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Calendar, Clock, DollarSign, Users } from "lucide-react"
-import { AdminAppointmentsList } from "@/components/admin-appointments-list"
-import { AdminRevenueChart } from "@/components/admin-revenue-chart"
-import { getAppointments } from "@/app/actions/appointments"
-import { getCustomers } from "@/app/actions/customers"
+"use client"
 
-export default async function AdminDashboardPage() {
-  const appointments = await getAppointments()
-  const customers = await getCustomers()
+import { useEffect, useState } from "react"
+import { createSupabaseClient } from "@/lib/supabase"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { useRouter } from "next/navigation"
 
-  // Calculate total revenue
-  const totalRevenue = appointments.reduce((total, appointment) => {
-    return total + (appointment.payment_amount || 0)
-  }, 0)
+interface Appointment {
+  id: string
+  customer_id: string
+  service_id: string
+  date: string
+  time: string
+  status: string
+  created_at: string
+  customer: {
+    first_name: string
+    last_name: string
+    email: string
+    phone: string
+  }
+  service: {
+    name: string
+    duration: number
+    price: number
+  }
+}
 
-  // Calculate total bookings
-  const totalBookings = appointments.length
+interface Customer {
+  id: string
+  first_name: string
+  last_name: string
+  email: string
+  phone: string
+  created_at: string
+}
 
-  // Calculate average appointment duration
-  const totalDuration = appointments.reduce((total, appointment) => {
-    return total + (appointment.hairstyles?.duration || 0)
-  }, 0)
+export default function AdminDashboardPage() {
+  const [appointments, setAppointments] = useState<Appointment[]>([])
+  const [customers, setCustomers] = useState<Customer[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const router = useRouter()
 
-  const avgDuration = totalBookings > 0 ? Math.round(totalDuration / totalBookings) : 0
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const supabase = createSupabaseClient()
+        
+        // Fetch appointments with customer and service details
+        const { data: appointmentsData, error: appointmentsError } = await supabase
+          .from('appointments')
+          .select(`
+            *,
+            customer:customers(first_name, last_name, email, phone),
+            service:services(name, duration, price)
+          `)
+          .order('date', { ascending: true })
+
+        if (appointmentsError) throw appointmentsError
+
+        // Fetch customers
+        const { data: customersData, error: customersError } = await supabase
+          .from('customers')
+          .select('*')
+          .order('created_at', { ascending: false })
+
+        if (customersError) throw customersError
+
+        setAppointments(appointmentsData || [])
+        setCustomers(customersData || [])
+      } catch (error) {
+        console.error("Error fetching data:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [])
+
+  if (isLoading) {
+    return (
+      <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
+        <p>Loading dashboard data...</p>
+      </div>
+    )
+  }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+        <Button onClick={() => router.push("/")}>View Site</Button>
+      </div>
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Total Appointments</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">£{totalRevenue.toFixed(2)}</div>
-            <p className="text-xs text-muted-foreground">From {totalBookings} bookings</p>
+            <div className="text-2xl font-bold">{appointments.length}</div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Bookings</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">+{totalBookings}</div>
-            <p className="text-xs text-muted-foreground">
-              {appointments.filter((a) => a.status === "confirmed").length} confirmed
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Customers</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Total Customers</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{customers.length}</div>
-            <p className="text-xs text-muted-foreground">
-              {
-                customers.filter((c) => appointments.some((a) => a.customer_id === c.id && a.status !== "cancelled"))
-                  .length
-              }{" "}
-              with bookings
-            </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg. Appointment Duration</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Pending Appointments</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{avgDuration}m</div>
-            <p className="text-xs text-muted-foreground">Per appointment</p>
+            <div className="text-2xl font-bold">
+              {appointments.filter(apt => apt.status === 'pending').length}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Completed Appointments</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {appointments.filter(apt => apt.status === 'completed').length}
+            </div>
           </CardContent>
         </Card>
       </div>
-      <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="appointments">Appointments</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
-        </TabsList>
-        <TabsContent value="overview" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-            <Card className="col-span-4">
-              <CardHeader>
-                <CardTitle>Revenue Overview</CardTitle>
-              </CardHeader>
-              <CardContent className="pl-2">
-                <AdminRevenueChart appointments={appointments} />
-              </CardContent>
-            </Card>
-            <Card className="col-span-3">
-              <CardHeader>
-                <CardTitle>Recent Appointments</CardTitle>
-                <CardDescription>
-                  You have{" "}
-                  {
-                    appointments.filter(
-                      (a) => new Date(a.appointment_date).toDateString() === new Date().toDateString(),
-                    ).length
-                  }{" "}
-                  appointments today
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <AdminAppointmentsList appointments={appointments} limit={5} />
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-        <TabsContent value="appointments" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>All Appointments</CardTitle>
-              <CardDescription>View and manage all your upcoming appointments</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <AdminAppointmentsList appointments={appointments} />
-            </CardContent>
-          </Card>
-        </TabsContent>
-        <TabsContent value="analytics" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Analytics</CardTitle>
-              <CardDescription>View detailed analytics about your business</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[400px] flex items-center justify-center text-muted-foreground">
-                Analytics dashboard coming soon
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Appointments</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {appointments.slice(0, 5).map((appointment) => (
+                <div key={appointment.id} className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">
+                      {appointment.customer.first_name} {appointment.customer.last_name}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {appointment.service.name} - {new Date(appointment.date).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {appointment.status}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Customers</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {customers.slice(0, 5).map((customer) => (
+                <div key={customer.id} className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">
+                      {customer.first_name} {customer.last_name}
+                    </p>
+                    <p className="text-sm text-muted-foreground">{customer.email}</p>
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {new Date(customer.created_at).toLocaleDateString()}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }

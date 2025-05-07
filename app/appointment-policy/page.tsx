@@ -1,11 +1,13 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import Link from "next/link"
 import { MainNav } from "@/components/main-nav"
 import { Footer } from "@/components/footer"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { createSupabaseClient } from "@/lib/supabase"
 import { useToast } from "@/hooks/use-toast"
+import { Button } from "@/components/ui/button"
 
 export default function AppointmentPolicyPage() {
   const [policy, setPolicy] = useState<any>(null)

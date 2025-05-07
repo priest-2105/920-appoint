@@ -1,126 +1,247 @@
 "use client"
 
-import type React from "react"
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
-import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { MainNav } from "@/components/main-nav"
-import { Footer } from "@/components/footer"
-import { signIn } from "@/app/actions/auth"
+import { createSupabaseClient } from "@/lib/supabase"
 import { useToast } from "@/hooks/use-toast"
-import { Scissors } from "lucide-react"
+import { useAppDispatch, useAppSelector } from "@/lib/store/hooks"
+import { setUser } from "@/lib/store/features/authSlice"
+import { useRouter } from "next/navigation"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isCheckingSession, setIsCheckingSession] = useState(true)
   const router = useRouter()
-  const searchParams = useSearchParams()
   const { toast } = useToast()
+  const dispatch = useAppDispatch()
+  const { user, isAuthenticated } = useAppSelector((state) => state.auth)
 
-  const redirectUrl = searchParams.get("redirect") || "/"
+  useEffect(() => {
+    let mounted = true
+
+    const checkSession = async () => {
+      console.log("=== Login Page Session Check ===")
+      try {
+        const supabase = createSupabaseClient()
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        console.log("Session data:", session)
+        
+        if (!mounted) return
+
+        if (session?.user) {
+          console.log("✅ Session found, updating Redux store...")
+          // Get customer data
+          const { data: customerData, error: customerError } = await supabase
+            .from('customers')
+            .select('*')
+            .eq('id', session.user.id)
+            .single()
+
+          console.log("Customer data:", customerData)
+          console.log("Customer error:", customerError)
+
+          if (!mounted) return
+
+          if (customerData) {
+            // Update Redux store with combined user and customer data
+            const userData = { ...session.user, ...customerData }
+            dispatch(setUser(userData))
+
+            // Wait for Redux state to update
+            setTimeout(() => {
+              if (userData.is_admin) {
+                console.log("✅ User is admin, redirecting to admin dashboard")
+                router.push("/admin/dashboard")
+              } else {
+                console.log("✅ User is not admin, redirecting to home")
+                router.push("/")
+              }
+            }, 100)
+          }
+        } else {
+          setIsCheckingSession(false)
+        }
+      } catch (error) {
+        console.error("❌ Session check error:", error)
+        setIsCheckingSession(false)
+      }
+    }
+
+    if (!isAuthenticated) {
+      checkSession()
+    } else {
+      setIsCheckingSession(false)
+    }
+
+    return () => {
+      mounted = false
+    }
+  }, [dispatch, router, isAuthenticated, user])
+
+  useEffect(() => {
+    // Rehydrate authentication state from local storage
+    const storedUser = localStorage.getItem('user')
+    if (storedUser) {
+      const userData = JSON.parse(storedUser)
+      dispatch(setUser(userData))
+    }
+  }, [dispatch])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
+    setIsSubmitting(true)
+    console.log("=== Login Form Submit ===")
 
     try {
-      await signIn(email, password)
-
-      toast({
-        title: "Login Successful",
-        description: "You have been successfully logged in.",
+      console.log("🔍 Attempting login...")
+      const supabase = createSupabaseClient()
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       })
 
-      router.push(redirectUrl)
-      router.refresh()
-    } catch (error) {
-      console.error("Login error:", error)
+      if (error) {
+        console.log("❌ Login error:", error)
+        throw error
+      }
+
+      console.log("✅ Login successful, user data:", data)
+
+      if (data.user) {
+        console.log("🔍 Fetching customer data...")
+        // Get additional user data from customers table
+        const { data: customerData, error: customerError } = await supabase
+          .from('customers')
+          .select('*')
+          .eq('id', data.user.id)
+          .single()
+
+        console.log("Customer data:", customerData)
+        console.log("Customer error:", customerError)
+
+        if (customerError) {
+          throw customerError
+        }
+
+        // Combine auth user with customer data
+        const userData = {
+          ...data.user,
+          ...customerData,
+        }
+
+        console.log("✅ Updating Redux store with userData:", userData)
+        // Update Redux store
+        dispatch(setUser(userData))
+        console.log("admin status", userData.is_admin)
+
+        // Persist user data in local storage
+        localStorage.setItem('user', JSON.stringify(userData))
+
+        toast({
+          title: "Success",
+          description: "You have been successfully logged in.",
+        })
+      
+        if (userData.is_admin) {
+          console.log("Redirecting to admin dashboard")
+          router.push("/admin/dashboard")
+        } else {
+          console.log("Redirecting to home")
+          router.push("/")
+        }
+      }
+    } catch (error: any) {
+      console.error("❌ Login error:", error)
       toast({
-        title: "Login Failed",
-        description: "Invalid email or password. Please try again.",
+        title: "Error",
+        description: error.message || "Failed to log in. Please try again.",
         variant: "destructive",
       })
     } finally {
-      setIsLoading(false)
+      setIsSubmitting(false)
     }
   }
 
+  // If we're checking the session, show loading
+  if (isCheckingSession) {
+    return (
+      <div className="container flex h-screen w-screen flex-col items-center justify-center">
+        <p>Checking session...</p>
+      </div>
+    )
+  }
+
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="container z-40 bg-background">
-        <div className="flex h-20 items-center justify-between py-6">
-          <MainNav />
+    <div className="container flex h-screen w-screen flex-col items-center justify-center">
+      <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
+        <div className="flex flex-col space-y-2 text-center">
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Welcome back
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Enter your email to sign in to your account
+          </p>
         </div>
-      </header>
-      <main className="flex-1 py-12 md:py-24 lg:py-32 bg-muted">
-        <div className="container grid items-center gap-6 px-4 md:px-6 lg:grid-cols-2 lg:gap-10">
-          <div className="space-y-3">
-            <div className="inline-block rounded-lg bg-muted-foreground/20 p-1 text-muted-foreground">
-              <Scissors className="h-5 w-5" />
+
+        <div className="grid gap-6">
+          <form onSubmit={handleSubmit}>
+            <div className="grid gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  placeholder="name@example.com"
+                  type="email"
+                  autoCapitalize="none"
+                  autoComplete="email"
+                  autoCorrect="off"
+                  disabled={isSubmitting}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  disabled={isSubmitting}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
+              <Button disabled={isSubmitting}>
+                {isSubmitting ? "Signing in..." : "Sign In"}
+              </Button>
             </div>
-            <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">Welcome Back to StyleSync</h1>
-            <p className="max-w-[600px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-              Sign in to manage your appointments, view your booking history, and more.
-            </p>
-          </div>
-          <div className="mx-auto w-full max-w-sm space-y-4">
-            <Card>
-              <CardHeader className="space-y-1">
-                <CardTitle className="text-2xl">Sign in</CardTitle>
-                <CardDescription>Enter your email and password to access your account</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="name@example.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="password">Password</Label>
-                      <Link href="/forgot-password" className="text-sm underline">
-                        Forgot password?
-                      </Link>
-                    </div>
-                    <Input
-                      id="password"
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? "Signing in..." : "Sign In"}
-                  </Button>
-                </form>
-              </CardContent>
-              <CardFooter className="flex flex-col">
-                <div className="text-sm text-muted-foreground text-center">
-                  Don&apos;t have an account?{" "}
-                  <Link href="/signup" className="underline">
-                    Sign up
-                  </Link>
-                </div>
-              </CardFooter>
-            </Card>
-          </div>
+          </form>
         </div>
-      </main>
-      <Footer />
+
+        <p className="px-8 text-center text-sm text-muted-foreground">
+          <Link
+            href="/forgot-password"
+            className="hover:text-brand underline underline-offset-4"
+          >
+            Forgot your password?
+          </Link>
+        </p>
+
+        <p className="px-8 text-center text-sm text-muted-foreground">
+          Don't have an account?{" "}
+          <Link
+            href="/signup"
+            className="hover:text-brand underline underline-offset-4"
+          >
+            Sign up
+          </Link>
+        </p>
+      </div>
     </div>
   )
 }

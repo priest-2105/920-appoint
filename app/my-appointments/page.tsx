@@ -28,7 +28,7 @@ export default function MyAppointmentsPage() {
         const { data } = await supabase.auth.getUser()
 
         if (!data.user) {
-          router.push("/login?redirect=/my-appointments")
+          // router.push("/login?redirect=/my-appointments")
           return
         }
 
@@ -36,7 +36,7 @@ export default function MyAppointmentsPage() {
         fetchAppointments(data.user.id)
       } catch (error) {
         console.error("Error checking auth:", error)
-        router.push("/login?redirect=/my-appointments")
+        // router.push("/login?redirect=/my-appointments")
       }
     }
 

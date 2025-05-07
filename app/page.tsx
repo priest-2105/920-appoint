@@ -9,7 +9,6 @@ import { FeaturedHairstyles } from "@/components/featured-hairstyles"
 import { HowItWorks } from "@/components/how-it-works"
 import { Footer } from "@/components/footer"
 import { createSupabaseClient } from "@/lib/supabase"
-import { signOut } from "@/app/actions/auth"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
 
@@ -40,7 +39,7 @@ export default function Home() {
     try {
       const supabase = createSupabaseClient()
       
-      // Sign out using the client library
+      
       console.log("Attempting to sign out...")
       const { error } = await supabase.auth.signOut()
       
@@ -81,38 +80,6 @@ export default function Home() {
       <header className="container z-40 bg-background">
         <div className="flex h-20 items-center justify-between py-6">
           <MainNav />
-          <nav className="hidden md:flex items-center gap-2">
-            {isLoading ? (
-              <div className="w-20 h-8 bg-muted animate-pulse rounded-md"></div>
-            ) : (
-              <>
-                {user ? (
-                  <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="sm" asChild>
-                      <Link href="/my-appointments">My Appointments</Link>
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={handleSignOut}>
-                      Sign Outiunjui
-                    </Button>
-                    <Link href="/book">
-                      <Button size="sm">Book Now</Button>
-                    </Link>
-                  </div>
-                ) : (
-                  <>
-                    <Link href="/login">
-                      <Button variant="ghost" size="sm">
-                        Login
-                      </Button>
-                    </Link>
-                    <Link href="/book">
-                      <Button size="sm">Book Now</Button>
-                    </Link>
-                  </>
-                )}
-              </>
-            )}
-          </nav>
         </div>
       </header>
       <main className="flex-1">

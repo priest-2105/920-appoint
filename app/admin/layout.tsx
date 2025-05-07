@@ -3,17 +3,9 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { createSupabaseClient } from "@/lib/supabase"
+import { useAppDispatch, useAppSelector } from "@/lib/store/hooks"
+import { setUser } from "@/lib/store/features/authSlice"
 import { MainNav } from "@/components/main-nav"
-import type React from "react"
-import type { Metadata } from "next"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { AdminSidebar } from "@/components/admin-sidebar"
-
-export const metadata: Metadata = {
-  title: "Admin Dashboard - StyleSync",
-  description: "Manage your hairstyle booking business",
-}
 
 export default function AdminLayout({
   children,
@@ -22,77 +14,91 @@ export default function AdminLayout({
 }) {
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
+  const dispatch = useAppDispatch()
+  const { user, isAuthenticated } = useAppSelector((state) => state.auth)
 
   useEffect(() => {
-    const checkAdminStatus = async () => {
+    const checkAuth = async () => {
+      console.log("=== Admin Layout Auth Check ===")
+      console.log("Current Redux State:", { isAuthenticated, user })
+      
       try {
-        const supabase = createSupabaseClient()
-        
-        // Get current user
-        const { data: { user } } = await supabase.auth.getUser()
-        
-        if (!user) {
-          console.log("No user found, redirecting to login")
-          router.push("/login")
+        // If we already have the user data in Redux and they're an admin, we can skip the check
+        if (isAuthenticated && user?.is_admin) {
+          console.log("✅ User already authenticated and is admin in Redux state")
+          setIsLoading(false)
           return
         }
 
-        // Check if user is admin
-        const { data: customerData, error } = await supabase
+        console.log("🔍 Checking Supabase session...")
+        const supabase = createSupabaseClient()
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        console.log("Session data:", session)
+
+        if (!session?.user) {
+          console.log("❌ No session found, redirecting to login")
+          // router.replace("/login")
+          return
+        }
+
+        console.log("✅ Session found, checking customer data...")
+        // Get customer data
+        const { data: customerData, error: customerError } = await supabase
           .from('customers')
-          .select('is_admin')
-          .eq('id', user.id)
+          .select('*')
+          .eq('id', session.user.id)
           .single()
 
-        if (error || !customerData?.is_admin) {
-          console.log("User is not an admin, redirecting to home")
-          router.push("/")
+        console.log("Customer data:", customerData)
+        console.log("Customer error:", customerError)
+
+        if (customerError || !customerData) {
+          console.log("❌ Error fetching customer data:", customerError)
+          // router.replace("/login")
           return
         }
 
-        console.log("Admin access verified")
+        if (!customerData.is_admin) {
+          console.log("❌ User is not an admin, redirecting to home")
+          // router.replace("/")
+          return
+        }
+
+        console.log("✅ User is admin, updating Redux store...")
+        // Update Redux store with user data
+        dispatch(setUser({ ...session.user, ...customerData }))
+        console.log("✅ Redux store updated, showing dashboard")
         setIsLoading(false)
       } catch (error) {
-        console.error("Error checking admin status:", error)
-        router.push("/")
+        console.error("❌ Auth check error:", error)
+        // router.replace("/login")
       }
     }
 
-    checkAdminStatus()
-  }, [router])
+    checkAuth()
+  }, [dispatch, router, isAuthenticated, user])
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-lg font-semibold">Loading...</h2>
-          <p className="text-sm text-muted-foreground">Verifying admin access</p>
-        </div>
+      <div className="flex h-screen w-screen items-center justify-center">
+        <p>Loading admin dashboard...</p>
       </div>
     )
   }
 
   return (
-    <div className="grid min-h-screen w-full md:grid-cols-[240px_1fr] lg:grid-cols-[280px_1fr]">
-      <AdminSidebar />
-      <div className="flex flex-col">
-        <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-6">
-          <Link href="/admin/dashboard" className="lg:hidden">
-            <Button variant="outline" size="icon" className="h-8 w-8">
-              <span className="sr-only">Home</span>
-            </Button>
-          </Link>
-          <div className="ml-auto flex items-center gap-2">
-            <Button variant="outline" size="sm" asChild>
-              <Link href="/">View Site</Link>
-            </Button>
-            <Button variant="ghost" size="sm">
-              Logout
-            </Button>
-          </div>
-        </header>
-        <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">{children}</main>
-      </div>
+    <div className="flex min-h-screen flex-col">
+      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container flex h-14 items-center">
+          <MainNav />
+        </div>
+      </header>
+      <main className="flex-1">
+        <div className="container py-6">
+          {children}
+        </div>
+      </main>
     </div>
   )
 }

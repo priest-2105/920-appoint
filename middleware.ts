@@ -15,15 +15,17 @@ export async function middleware(req: NextRequest) {
   if (req.nextUrl.pathname.startsWith("/admin")) {
     if (!session) {
       // Redirect to login if not authenticated
-      const redirectUrl = new URL("/login", req.url)
-      redirectUrl.searchParams.set("redirect", req.nextUrl.pathname)
-      return NextResponse.redirect(redirectUrl)
+      return NextResponse.redirect(new URL("/login", req.url))
     }
 
-    // Check if the user is an admin
-    // In a real app, you would check a role or permission
-    // For demo purposes, we'll check if the email is admin@stylesync.com
-    if (session.user.email !== "admin@stylesync.com") {
+    // Check if the user is an admin by querying the customers table
+    const { data: customerData, error } = await supabase
+      .from('customers')
+      .select('is_admin')
+      .eq('id', session.user.id)
+      .single()
+
+    if (error || !customerData?.is_admin) {
       // Redirect to home if not an admin
       return NextResponse.redirect(new URL("/", req.url))
     }

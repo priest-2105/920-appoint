@@ -35,9 +35,14 @@ export default function ProfilePage() {
       try {
         const supabase = createSupabaseClient()
         const { data } = await supabase.auth.getUser()
+        
+        console.log('Auth Debug - Full auth response:', data)
+        console.log('Auth Debug - User object:', data.user)
+        console.log('Auth Debug - Session:', await supabase.auth.getSession())
 
         if (!data.user) {
-          router.push("/login?redirect=/profile")
+          console.log('Auth Debug - No user found, redirecting to login')
+          // router.push("/login?redirect=/profile")
           return
         }
 
@@ -45,7 +50,7 @@ export default function ProfilePage() {
         fetchCustomer(data.user.id)
       } catch (error) {
         console.error("Error checking auth:", error)
-        router.push("/login?redirect=/profile")
+        // router.push("/login?redirect=/profile")
       }
     }
 
@@ -139,13 +144,6 @@ export default function ProfilePage() {
       <header className="container z-40 bg-background">
         <div className="flex h-20 items-center justify-between py-6">
           <MainNav />
-          <nav className="flex items-center gap-2">
-            <Link href="/my-appointments">
-              <Button variant="ghost" size="sm">
-                My Appointments
-              </Button>
-            </Link>
-          </nav>
         </div>
       </header>
       <main className="flex-1 py-12 md:py-24 lg:py-32 bg-muted">
