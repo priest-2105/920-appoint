@@ -210,4 +210,3 @@ export async function sendAdminHairstyleNotification(hairstyle: any, action: "cr
     html,
   })
 }
-

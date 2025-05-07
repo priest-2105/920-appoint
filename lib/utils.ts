@@ -40,4 +40,3 @@ export async function sendAdminHairstyleNotification(hairstyle: any, action: "cr
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
-

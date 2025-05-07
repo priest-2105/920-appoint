@@ -150,4 +150,3 @@ export function AdminAppointmentsList({ appointments, limit }: AdminAppointments
     </Table>
   )
 }
-

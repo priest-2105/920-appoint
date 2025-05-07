@@ -24,17 +24,44 @@ export default function ResetPasswordPage() {
   const { toast } = useToast()
 
   useEffect(() => {
-    // Check if we have the necessary parameters from the reset email
-    const hasParams = searchParams.has("code") && searchParams.has("type")
-    setIsValid(hasParams)
+    const verifyResetToken = async () => {
+      const code = searchParams.get("code")
+      const type = searchParams.get("type")
 
-    if (!hasParams) {
-      toast({
-        title: "Invalid Reset Link",
-        description: "The password reset link is invalid or has expired.",
-        variant: "destructive",
-      })
+      if (!code || type !== "recovery") {
+        setIsValid(false)
+        toast({
+          title: "Invalid Reset Link",
+          description: "The password reset link is invalid or has expired.",
+          variant: "destructive",
+        })
+        return
+      }
+
+      try {
+        const supabase = createSupabaseClient()
+        const { error } = await supabase.auth.verifyOtp({
+          token_hash: code,
+          type: "recovery",
+        })
+
+        if (error) {
+          throw error
+        }
+
+        setIsValid(true)
+      } catch (error) {
+        console.error("Error verifying reset token:", error)
+        setIsValid(false)
+        toast({
+          title: "Invalid Reset Link",
+          description: "The password reset link is invalid or has expired.",
+          variant: "destructive",
+        })
+      }
     }
+
+    verifyResetToken()
   }, [searchParams, toast])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -53,7 +80,6 @@ export default function ResetPasswordPage() {
 
     try {
       const supabase = createSupabaseClient()
-
       const { error } = await supabase.auth.updateUser({
         password,
       })
@@ -148,4 +174,3 @@ export default function ResetPasswordPage() {
     </div>
   )
 }
-

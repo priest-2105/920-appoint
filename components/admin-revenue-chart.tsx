@@ -123,4 +123,3 @@ export function AdminRevenueChart({ appointments }: AdminRevenueChartProps) {
     </div>
   )
 }
-

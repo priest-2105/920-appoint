@@ -98,21 +98,17 @@ export async function isAdmin() {
     return false
   }
 
-  // Check if the user has the admin role
-  // This would typically be stored in user metadata or a separate table
   const supabase = createServerSupabaseClient()
 
   const { data, error } = await supabase
     .from("customers")
-    .select("*")
+    .select("is_admin")
     .eq("id", user.id)
-    .eq("email", "admin@stylesync.com") // Simple check for demo purposes
     .single()
 
   if (error || !data) {
     return false
   }
 
-  return true
+  return data.is_admin === true
 }
-

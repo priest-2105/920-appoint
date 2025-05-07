@@ -113,4 +113,3 @@ export function BookingCalendar({ onDateSelect, hairstyleId }: BookingCalendarPr
     </div>
   )
 }
-

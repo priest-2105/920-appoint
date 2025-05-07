@@ -84,4 +84,3 @@ export async function updateCustomer(id: string, customer: any) {
 
   return data[0]
 }
-

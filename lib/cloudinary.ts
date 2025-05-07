@@ -58,4 +58,3 @@ export async function deleteImage(publicId: string) {
     throw new Error("Failed to delete image")
   }
 }
-

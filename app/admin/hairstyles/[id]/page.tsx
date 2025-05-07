@@ -337,4 +337,3 @@ export default function EditHairstylePage({ params }: { params: { id: string } }
     </div>
   )
 }
-

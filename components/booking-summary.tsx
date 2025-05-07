@@ -57,4 +57,3 @@ export function BookingSummary({ style, date, customer }: BookingSummaryProps) {
     </Card>
   )
 }
-

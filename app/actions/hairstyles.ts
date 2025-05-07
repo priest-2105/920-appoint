@@ -100,4 +100,3 @@ export async function deleteHairstyle(id: string) {
 
   return { success: true }
 }
-

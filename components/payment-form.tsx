@@ -147,4 +147,3 @@ export function PaymentForm({ amount, onSuccess }: PaymentFormProps) {
     </div>
   )
 }
-

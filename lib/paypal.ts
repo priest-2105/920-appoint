@@ -12,4 +12,3 @@ export const getPaypalOptions = () => {
     intent: "capture",
   }
 }
-
