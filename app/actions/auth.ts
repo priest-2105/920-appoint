@@ -7,42 +7,53 @@ import { redirect } from "next/navigation"
 export async function signUp(email: string, password: string, userData: any) {
   const supabase = createServerSupabaseClient()
 
-  // Create the user in Supabase Auth
-  const { data: authData, error: authError } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        first_name: userData.first_name,
-        last_name: userData.last_name,
+  try {
+    // Create the user in Supabase Auth
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          first_name: userData.first_name,
+          last_name: userData.last_name,
+        },
+        emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
       },
-    },
-  })
+    })
 
-  if (authError) {
-    console.error("Error signing up:", authError)
-    throw new Error(authError.message)
-  }
+    if (authError) {
+      console.error("Error signing up:", authError)
+      throw new Error(authError.message)
+    }
 
-  // Create the customer record
-  if (authData.user) {
+    if (!authData.user) {
+      throw new Error("No user data returned from signup")
+    }
+
+    // Create the customer record
     const { error: customerError } = await supabase.from("customers").insert([
       {
         id: authData.user.id,
         email: email,
         first_name: userData.first_name,
         last_name: userData.last_name,
-        phone: userData.phone,
+        phone: userData.phone || null,
+        is_admin: false, // Explicitly set is_admin to false for new users
       },
     ])
 
     if (customerError) {
       console.error("Error creating customer record:", customerError)
-      // Don't throw here, the auth user was created successfully
+      // If customer creation fails, we should clean up the auth user
+      await supabase.auth.admin.deleteUser(authData.user.id)
+      throw new Error("Failed to create user profile")
     }
-  }
 
-  return { success: true, user: authData.user }
+    return { success: true, user: authData.user }
+  } catch (error) {
+    console.error("Signup error:", error)
+    throw error
+  }
 }
 
 // Sign in a user
@@ -60,20 +71,6 @@ export async function signIn(email: string, password: string) {
   }
 
   return { success: true, user: data.user }
-}
-
-// Sign out a user
-export async function signOut() {
-  const supabase = createServerSupabaseClient()
-
-  const { error } = await supabase.auth.signOut()
-
-  if (error) {
-    console.error("Error signing out:", error)
-    throw new Error(error.message)
-  }
-
-  redirect("/")
 }
 
 // Get the current user

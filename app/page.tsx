@@ -36,15 +36,38 @@ export default function Home() {
   }, [])
 
   const handleSignOut = async () => {
+    console.log("Starting client-side sign out process...")
     try {
-      await signOut()
+      const supabase = createSupabaseClient()
+      
+      // Sign out using the client library
+      console.log("Attempting to sign out...")
+      const { error } = await supabase.auth.signOut()
+      
+      if (error) {
+        console.error("Error during sign out:", error)
+        throw new Error(error.message)
+      }
+      console.log("Successfully signed out from auth")
+
+      // Clear local state
+      console.log("Clearing local user state...")
+      setUser(null)
+      console.log("Local user state cleared")
+
+      // Show success message
+      console.log("Showing success toast...")
       toast({
         title: "Signed Out",
         description: "You have been successfully signed out.",
       })
+
+      // Refresh the page state and navigate
+      console.log("Refreshing page state...")
       router.refresh()
+      router.push("/")
     } catch (error) {
-      console.error("Error signing out:", error)
+      console.error("Error in handleSignOut:", error)
       toast({
         title: "Error",
         description: "There was an error signing out. Please try again.",
@@ -69,7 +92,7 @@ export default function Home() {
                       <Link href="/my-appointments">My Appointments</Link>
                     </Button>
                     <Button variant="ghost" size="sm" onClick={handleSignOut}>
-                      Sign Out
+                      Sign Outiunjui
                     </Button>
                     <Link href="/book">
                       <Button size="sm">Book Now</Button>

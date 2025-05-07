@@ -26,6 +26,22 @@ export default function ForgotPasswordPage() {
     try {
       const supabase = createSupabaseClient()
 
+      // First check if the email exists
+      const { data: userData, error: userError } = await supabase
+        .from("customers")
+        .select("id")
+        .eq("email", email)
+        .single()
+
+      if (userError || !userData) {
+        toast({
+          title: "Email Not Found",
+          description: "No account found with this email address.",
+          variant: "destructive",
+        })
+        return
+      }
+
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/reset-password`,
       })

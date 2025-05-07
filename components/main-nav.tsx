@@ -6,42 +6,91 @@ import { Scissors, Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { createSupabaseClient } from "@/lib/supabase"
-import { signOut } from "@/app/actions/auth"
+import { signOut, isAdmin } from "@/app/actions/auth"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
 
 export function MainNav() {
   const [user, setUser] = useState<any>(null)
+  const [isAdminUser, setIsAdminUser] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const { toast } = useToast()
   const router = useRouter()
 
   useEffect(() => {
-    const fetchUser = async () => {
+    const fetchUserAndAdminStatus = async () => {
       try {
         const supabase = createSupabaseClient()
-        const { data } = await supabase.auth.getUser()
-        setUser(data.user)
+        const { data: userData } = await supabase.auth.getUser()
+        setUser(userData.user)
+        
+        if (userData.user) {
+          // Check admin status directly from customers table
+          const { data: customerData, error } = await supabase
+            .from('customers')
+            .select('is_admin')
+            .eq('id', userData.user.id)
+            .single()
+          
+          console.log("Customer data:", customerData)
+          console.log("Admin check error:", error)
+          
+          if (error) {
+            console.error("Error checking admin status:", error)
+            setIsAdminUser(false)
+          } else {
+            const isAdmin = customerData?.is_admin === true
+            console.log("Setting admin status to:", isAdmin)
+            setIsAdminUser(isAdmin)
+          }
+        }
       } catch (error) {
         console.error("Error fetching user:", error)
+        setIsAdminUser(false)
       } finally {
         setIsLoading(false)
       }
     }
 
-    fetchUser()
+    fetchUserAndAdminStatus()
   }, [])
 
+  // Add a debug effect to log admin status changes
+  useEffect(() => {
+    console.log("Admin status updated:", isAdminUser)
+  }, [isAdminUser])
+
   const handleSignOut = async () => {
+    console.log("Starting client-side sign out process...")
     try {
-      await signOut()
+      // Clear local state first
+      console.log("Clearing local user state...")
+      setUser(null)
+      setIsAdminUser(false)
+      console.log("Local user state cleared")
+      
+      // Sign out from server
+      console.log("Calling server-side sign out...")
+      const result = await signOut()
+      console.log("Sign out result:", result)
+      
+      if (!result.success) {
+        console.error("Sign out failed:", result.error)
+        throw new Error(result.error || "Failed to sign out")
+      }
+
+      // Show success message
+      console.log("Showing success toast...")
       toast({
         title: "Signed Out",
         description: "You have been successfully signed out.",
       })
-      router.refresh()
+
+      // Force a hard refresh to clear any cached state
+      console.log("Initiating page refresh...")
+      window.location.href = "/"
     } catch (error) {
-      console.error("Error signing out:", error)
+      console.error("Error in handleSignOut:", error)
       toast({
         title: "Error",
         description: "There was an error signing out. Please try again.",
@@ -89,7 +138,7 @@ export function MainNav() {
             My Appointments
           </Link>
         )}
-        {user && user.email === "admin@stylesync.com" && (
+        {isAdminUser && (
           <Link
             href="/admin/dashboard"
             className="flex items-center text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
@@ -144,7 +193,7 @@ export function MainNav() {
                   My Appointments
                 </Link>
               )}
-              {user && user.email === "admin@stylesync.com" && (
+              {isAdminUser && (
                 <Link
                   href="/admin/dashboard"
                   className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
@@ -156,7 +205,7 @@ export function MainNav() {
                 <>
                   {user ? (
                     <Button variant="default" onClick={handleSignOut}>
-                      Sign Out
+                      Sign Out jjibn
                     </Button>
                   ) : (
                     <div className="flex flex-col gap-2">

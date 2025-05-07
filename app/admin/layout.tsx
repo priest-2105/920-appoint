@@ -1,3 +1,9 @@
+"use client"
+
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import { createSupabaseClient } from "@/lib/supabase"
+import { MainNav } from "@/components/main-nav"
 import type React from "react"
 import type { Metadata } from "next"
 import Link from "next/link"
@@ -11,9 +17,61 @@ export const metadata: Metadata = {
 
 export default function AdminLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode
-}>) {
+}) {
+  const [isLoading, setIsLoading] = useState(true)
+  const router = useRouter()
+
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      try {
+        const supabase = createSupabaseClient()
+        
+        // Get current user
+        const { data: { user } } = await supabase.auth.getUser()
+        
+        if (!user) {
+          console.log("No user found, redirecting to login")
+          router.push("/login")
+          return
+        }
+
+        // Check if user is admin
+        const { data: customerData, error } = await supabase
+          .from('customers')
+          .select('is_admin')
+          .eq('id', user.id)
+          .single()
+
+        if (error || !customerData?.is_admin) {
+          console.log("User is not an admin, redirecting to home")
+          router.push("/")
+          return
+        }
+
+        console.log("Admin access verified")
+        setIsLoading(false)
+      } catch (error) {
+        console.error("Error checking admin status:", error)
+        router.push("/")
+      }
+    }
+
+    checkAdminStatus()
+  }, [router])
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-lg font-semibold">Loading...</h2>
+          <p className="text-sm text-muted-foreground">Verifying admin access</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[240px_1fr] lg:grid-cols-[280px_1fr]">
       <AdminSidebar />
