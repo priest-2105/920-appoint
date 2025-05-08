@@ -1,105 +1,131 @@
 import { google } from "googleapis"
-import { OAuth2Client } from "google-auth-library"
+import { createServerSupabaseClient } from "@/lib/supabase"
 
-// Create OAuth2 client
-const createOAuth2Client = () => {
-  const clientId = process.env.GOOGLE_CLIENT_ID
-  const clientSecret = process.env.GOOGLE_CLIENT_SECRET
-  const redirectUri = process.env.GOOGLE_REDIRECT_URI || "http://localhost:3000/api/auth/google/callback"
+// Initialize Google Calendar API with service account credentials
+const calendar = google.calendar({
+  version: "v3",
+  auth: new google.auth.GoogleAuth({
+    credentials: {
+      client_email: process.env.GOOGLE_CLIENT_EMAIL,
+      private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
+    },
+    scopes: ["https://www.googleapis.com/auth/calendar"],
+  }),
+})
 
-  if (!clientId || !clientSecret) {
-    throw new Error("Missing Google OAuth credentials")
-  }
+// Get the calendar ID from environment variables
+const CALENDAR_ID = process.env.GOOGLE_CALENDAR_ID
 
-  return new OAuth2Client(clientId, clientSecret, redirectUri)
-}
-
-// Get authorization URL for Google OAuth
-export const getAuthUrl = () => {
-  const oauth2Client = createOAuth2Client()
-
-  const scopes = ["https://www.googleapis.com/auth/calendar", "https://www.googleapis.com/auth/calendar.events"]
-
-  return oauth2Client.generateAuthUrl({
-    access_type: "offline",
-    scope: scopes,
-    prompt: "consent",
-  })
-}
-
-// Exchange authorization code for tokens
-export const getTokens = async (code: string) => {
-  const oauth2Client = createOAuth2Client()
-  const { tokens } = await oauth2Client.getToken(code)
-  return tokens
-}
-
-// Check availability in Google Calendar
-export async function checkAvailability(startTime: string, endTime: string, accessToken: string) {
+export async function checkAvailability(startTime: string, endTime: string) {
   try {
-    const oauth2Client = createOAuth2Client()
-    oauth2Client.setCredentials({ access_token: accessToken })
-
-    const calendar = google.calendar({ version: "v3", auth: oauth2Client })
-
-    // Get events from the calendar
     const response = await calendar.events.list({
-      calendarId: "primary",
+      calendarId: CALENDAR_ID,
       timeMin: startTime,
       timeMax: endTime,
       singleEvents: true,
+      orderBy: "startTime",
     })
 
-    // If there are events during this time, the slot is not available
-    return response.data.items && response.data.items.length === 0
+    return response.data.items?.length === 0
   } catch (error) {
     console.error("Error checking calendar availability:", error)
     throw new Error("Failed to check calendar availability")
   }
 }
 
-// Add an appointment to Google Calendar
-export async function addToGoogleCalendar(
-  event: {
-    summary: string
-    description: string
-    start: string
-    end: string
-    attendees: { email: string }[]
-  },
-  accessToken: string,
-) {
+export async function addEventToCalendar(event: {
+  summary: string
+  description: string
+  startTime: string
+  endTime: string
+  customerName: string
+  customerEmail: string
+}) {
   try {
-    const oauth2Client = createOAuth2Client()
-    oauth2Client.setCredentials({ access_token: accessToken })
-
-    const calendar = google.calendar({ version: "v3", auth: oauth2Client })
+    const calendarEvent = {
+      summary: event.summary,
+      description: event.description,
+      start: {
+        dateTime: event.startTime,
+        timeZone: "Europe/London",
+      },
+      end: {
+        dateTime: event.endTime,
+        timeZone: "Europe/London",
+      },
+      attendees: [
+        {
+          email: event.customerEmail,
+          displayName: event.customerName,
+        },
+      ],
+      reminders: {
+        useDefault: false,
+        overrides: [
+          { method: "email", minutes: 24 * 60 },
+          { method: "popup", minutes: 30 },
+        ],
+      },
+    }
 
     const response = await calendar.events.insert({
-      calendarId: "primary",
-      requestBody: {
-        summary: event.summary,
-        description: event.description,
-        start: { dateTime: event.start },
-        end: { dateTime: event.end },
-        attendees: event.attendees,
-        reminders: {
-          useDefault: false,
-          overrides: [
-            { method: "email", minutes: 24 * 60 },
-            { method: "popup", minutes: 30 },
-          ],
-        },
-      },
+      calendarId: CALENDAR_ID,
+      requestBody: calendarEvent,
+      sendUpdates: "all",
     })
 
-    return {
-      success: true,
-      eventId: response.data.id,
-      htmlLink: response.data.htmlLink,
-    }
+    return response.data
   } catch (error) {
-    console.error("Error adding to Google Calendar:", error)
-    throw new Error("Failed to add event to Google Calendar")
+    console.error("Error adding event to calendar:", error)
+    throw new Error("Failed to add event to calendar")
   }
+}
+
+export async function getCalendarSettings() {
+  const supabase = createServerSupabaseClient()
+
+  const { data: settings } = await supabase
+    .from("settings")
+    .select("value")
+    .eq("key", "google_calendar_settings")
+    .single()
+
+  return settings?.value || {
+    enabled: false,
+    checkAvailability: false,
+    addEvents: false,
+  }
+}
+
+export async function updateCalendarSettings(settings: {
+  enabled: boolean
+  checkAvailability: boolean
+  addEvents: boolean
+}) {
+  const supabase = createServerSupabaseClient()
+
+  const { data: existingSettings } = await supabase
+    .from("settings")
+    .select("*")
+    .eq("key", "google_calendar_settings")
+    .single()
+
+  if (existingSettings) {
+    await supabase
+      .from("settings")
+      .update({
+        value: settings,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("key", "google_calendar_settings")
+  } else {
+    await supabase.from("settings").insert([
+      {
+        key: "google_calendar_settings",
+        value: settings,
+      },
+    ])
+  }
+
+  return settings
 }

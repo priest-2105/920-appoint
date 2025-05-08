@@ -1,12 +1,11 @@
 "use client"
 
 import { useState } from "react"
-import { PayPalButtons, PayPalScriptProvider } from "@paypal/react-paypal-js"
+import { PayPalButtons, PayPalScriptProvider, ReactPayPalScriptOptions } from "@paypal/react-paypal-js"
 import { Card } from "@/components/ui/card"
 import { Lock } from "lucide-react"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
-import { getPaypalOptions } from "@/lib/paypal"
 import { useToast } from "@/hooks/use-toast"
 
 interface PaymentFormProps {
@@ -19,8 +18,21 @@ export function PaymentForm({ amount, onSuccess }: PaymentFormProps) {
   const [savePaymentMethod, setSavePaymentMethod] = useState(false)
   const { toast } = useToast()
 
-  // Format amount for PayPal (needs to be a string with 2 decimal places)
   const formattedAmount = amount.toFixed(2)
+
+  // Construct PayPal options directly here
+  // Ensure your environment variable NEXT_PUBLIC_PAYPAL_CLIENT_ID is set
+  const paypalOptions: ReactPayPalScriptOptions = {
+    clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || "", // Ensure clientId is camelCase
+    currency: "GBP",
+    intent: "capture", // Or "authorize"
+  };
+
+  if (!paypalOptions.clientId) {
+    console.error("PayPal Client ID is not set. Check NEXT_PUBLIC_PAYPAL_CLIENT_ID environment variable.");
+    // Optionally render an error message to the user
+    return <p className="text-red-500 text-center">PayPal integration is not configured correctly.</p>;
+  }
 
   const handleApprove = async (data: any, actions: any) => {
     setIsProcessing(true)
@@ -79,19 +91,20 @@ export function PaymentForm({ amount, onSuccess }: PaymentFormProps) {
 
   return (
     <div className="space-y-6">
-      <PayPalScriptProvider options={getPaypalOptions()}>
+      <PayPalScriptProvider options={paypalOptions}>
         <div className={`transition-opacity ${isProcessing ? "opacity-50 pointer-events-none" : ""}`}>
           <PayPalButtons
             style={{ layout: "vertical", shape: "rect" }}
-            disabled={isProcessing}
-            forceReRender={[amount]}
+            disabled={isProcessing || !paypalOptions.clientId}
+            forceReRender={[amount, paypalOptions.currency, paypalOptions.intent]}
             createOrder={(data, actions) => {
               return actions.order.create({
+                intent: "CAPTURE",
                 purchase_units: [
                   {
                     amount: {
                       value: formattedAmount,
-                      currency_code: "GBP",
+                      currency_code: paypalOptions.currency || "GBP",
                     },
                     description: "Hairstyle Appointment Booking",
                   },

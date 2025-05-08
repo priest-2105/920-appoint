@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { createServerSupabaseClient } from "@/lib/supabase"
+import { updateCalendarSettings } from "@/lib/google-calendar"
 import { isAdmin } from "@/app/actions/auth"
 
 export async function POST(request: Request) {
@@ -11,38 +11,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const settings = await request.json()
-    const supabase = createServerSupabaseClient()
+    const body = await request.json()
+    const settings = await updateCalendarSettings(body)
 
-    // Check if settings already exist
-    const { data: existingSettings } = await supabase
-      .from("settings")
-      .select("*")
-      .eq("key", "google_calendar_settings")
-      .single()
-
-    if (existingSettings) {
-      // Update existing settings
-      await supabase
-        .from("settings")
-        .update({
-          value: settings,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("key", "google_calendar_settings")
-    } else {
-      // Create new settings
-      await supabase.from("settings").insert([
-        {
-          key: "google_calendar_settings",
-          value: settings,
-        },
-      ])
-    }
-
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ settings })
   } catch (error) {
-    console.error("Error in Google Calendar settings route:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    console.error("Error updating Google Calendar settings:", error)
+    return NextResponse.json(
+      { error: "Failed to update Google Calendar settings" },
+      { status: 500 },
+    )
   }
 }

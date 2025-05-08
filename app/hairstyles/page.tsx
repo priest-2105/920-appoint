@@ -25,14 +25,14 @@ export default async function HairstylesPage() {
         <div className="flex h-20 items-center justify-between py-6">
           <MainNav />
           <nav className="flex items-center gap-2">
-            <Link href="/login">
+            {/* <Link href="/login">
               <Button variant="ghost" size="sm">
                 Login
               </Button>
-            </Link>
-            <Link href="/book">
+            </Link> */}
+            {/* <Link href="/book">
               <Button size="sm">Book Now</Button>
-            </Link>
+            </Link> */}
           </nav>
         </div>
       </header>

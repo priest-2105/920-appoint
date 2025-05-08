@@ -132,13 +132,13 @@ export default function BookingPage() {
       <header className="container z-40 bg-background">
         <div className="flex h-20 items-center justify-between py-6">
           <MainNav />
-          <nav className="flex items-center gap-2">
+          {/* <nav className="flex items-center gap-2">
             <Link href="/login">
               <Button variant="ghost" size="sm">
                 Login
               </Button>
             </Link>
-          </nav>
+          </nav> */}
         </div>
       </header>
       <main className="flex-1">
