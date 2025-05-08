@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Edit, MoreHorizontal, Trash } from "lucide-react"
@@ -24,71 +24,45 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
+import { getHairstyles } from "@/app/actions/hairstyles"
 
-// This would be fetched from Supabase in a real implementation
-const hairstyles = [
-  {
-    id: 1,
-    name: "Modern Fade",
-    price: 35,
-    duration: 45,
-    category: "Short",
-    image_url: "/placeholder.svg?height=200&width=300",
-    materials: "Scissors, Clippers, Comb",
-  },
-  {
-    id: 2,
-    name: "Classic Bob",
-    price: 45,
-    duration: 60,
-    category: "Medium",
-    image_url: "/placeholder.svg?height=200&width=300",
-    materials: "Scissors, Comb",
-  },
-  {
-    id: 3,
-    name: "Textured Pixie",
-    price: 40,
-    duration: 45,
-    category: "Short",
-    image_url: "/placeholder.svg?height=200&width=300",
-    materials: "Scissors, Texturizing Shears, Styling Wax",
-  },
-  {
-    id: 4,
-    name: "Long Layers",
-    price: 55,
-    duration: 75,
-    category: "Long",
-    image_url: "/placeholder.svg?height=200&width=300",
-    materials: "Scissors, Comb",
-  },
-  {
-    id: 5,
-    name: "Blunt Cut",
-    price: 40,
-    duration: 45,
-    category: "Medium",
-    image_url: "/placeholder.svg?height=200&width=300",
-    materials: "Scissors",
-  },
-  {
-    id: 6,
-    name: "Curly Shag",
-    price: 50,
-    duration: 60,
-    category: "Medium",
-    image_url: "/placeholder.svg?height=200&width=300",
-    materials: "Diffuser, Curl Cream",
-  },
-]
+// Define a type for Hairstyle (adjust fields as necessary based on your actual data structure)
+interface Hairstyle {
+  id: string; // Assuming ID is a string (UUID)
+  name: string;
+  price: number;
+  duration: number;
+  category: string;
+  image_url: string | null;
+  materials: string | null;
+  is_active?: boolean; 
+}
 
 export function AdminHairstylesList() {
-  const [styles, setStyles] = useState(hairstyles)
+  const [styles, setStyles] = useState<Hairstyle[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [styleToDelete, setStyleToDelete] = useState<number | null>(null)
+  const [styleToDelete, setStyleToDelete] = useState<string | null>(null)
 
-  const handleDelete = (id: number) => {
+  useEffect(() => {
+    const fetchHairstyles = async () => {
+      setIsLoading(true)
+      setError(null)
+      try {
+        const fetchedHairstyles = await getHairstyles()
+        setStyles(fetchedHairstyles || [])
+      } catch (err) {
+        console.error("Failed to fetch hairstyles:", err)
+        setError(err instanceof Error ? err.message : "An unknown error occurred")
+      }
+      setIsLoading(false)
+    }
+
+    fetchHairstyles()
+  }, [])
+
+  const handleDelete = (id: string) => {
     setStyleToDelete(id)
     setDeleteDialogOpen(true)
   }
@@ -99,6 +73,18 @@ export function AdminHairstylesList() {
       setDeleteDialogOpen(false)
       setStyleToDelete(null)
     }
+  }
+
+  if (isLoading) {
+    return <p>Loading hairstyles...</p>;
+  }
+
+  if (error) {
+    return <p>Error loading hairstyles: {error}</p>;
+  }
+
+  if (styles.length === 0) {
+    return <p>No hairstyles found. <Link href="/admin/hairstyles/new" className="underline">Add a new one?</Link></p>;
   }
 
   return (
