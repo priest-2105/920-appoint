@@ -13,21 +13,21 @@ export async function middleware(req: NextRequest) {
 
   // Protect admin routes
   if (req.nextUrl.pathname.startsWith("/admin")) {
-    if (!session) {
-      // Redirect to login if not authenticated
-      return NextResponse.redirect(new URL("/login", req.url))
-    }
+    // if (!session) {
+    //   // Redirect to login if not authenticated
+    //   return NextResponse.redirect(new URL("/login", req.url))
+    // }
 
     // Check if the user is an admin by querying the customers table
     const { data: customerData, error } = await supabase
       .from('customers')
       .select('is_admin')
-      .eq('id', session.user.id)
+      .eq('id', session?.user.id)
       .single()
 
     if (error || !customerData?.is_admin) {
       // Redirect to home if not an admin
-      return NextResponse.redirect(new URL("/", req.url))
+      // return NextResponse.redirect(new URL("/", req.url))
     }
   }
 

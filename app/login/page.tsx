@@ -22,69 +22,6 @@ export default function LoginPage() {
   const { user, isAuthenticated } = useAppSelector((state) => state.auth)
 
   useEffect(() => {
-    let mounted = true
-
-    const checkSession = async () => {
-      console.log("=== Login Page Session Check ===")
-      try {
-        const supabase = createSupabaseClient()
-        const { data: { session } } = await supabase.auth.getSession()
-        
-        console.log("Session data:", session)
-        
-        if (!mounted) return
-
-        if (session?.user) {
-          console.log("✅ Session found, updating Redux store...")
-          // Get customer data
-          const { data: customerData, error: customerError } = await supabase
-            .from('customers')
-            .select('*')
-            .eq('id', session.user.id)
-            .single()
-
-          console.log("Customer data:", customerData)
-          console.log("Customer error:", customerError)
-
-          if (!mounted) return
-
-          if (customerData) {
-            // Update Redux store with combined user and customer data
-            const userData = { ...session.user, ...customerData }
-            dispatch(setUser(userData))
-
-            // Wait for Redux state to update
-            setTimeout(() => {
-              if (userData.is_admin) {
-                console.log("✅ User is admin, redirecting to admin dashboard")
-                router.push("/admin/dashboard")
-              } else {
-                console.log("✅ User is not admin, redirecting to home")
-                router.push("/")
-              }
-            }, 100)
-          }
-        } else {
-          setIsCheckingSession(false)
-        }
-      } catch (error) {
-        console.error("❌ Session check error:", error)
-        setIsCheckingSession(false)
-      }
-    }
-
-    if (!isAuthenticated) {
-      checkSession()
-    } else {
-      setIsCheckingSession(false)
-    }
-
-    return () => {
-      mounted = false
-    }
-  }, [dispatch, router, isAuthenticated, user])
-
-  useEffect(() => {
     // Rehydrate authentication state from local storage
     const storedUser = localStorage.getItem('user')
     if (storedUser) {
@@ -92,6 +29,56 @@ export default function LoginPage() {
       dispatch(setUser(userData))
     }
   }, [dispatch])
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      const checkSession = async () => {
+        console.log("=== Login Page Session Check ===")
+        try {
+          const supabase = createSupabaseClient()
+          const { data: { session } } = await supabase.auth.getSession()
+          
+          console.log("Session data:", session)
+          
+          if (session?.user) {
+            console.log("✅ Session found, updating Redux store...")
+            // Get customer data
+            const { data: customerData, error: customerError } = await supabase
+              .from('customers')
+              .select('*')
+              .eq('id', session.user.id)
+              .single()
+
+            console.log("Customer data:", customerData)
+            console.log("Customer error:", customerError)
+
+            if (customerData) {
+              // Update Redux store with combined user and customer data
+              const userData = { ...session.user, ...customerData }
+              dispatch(setUser(userData))
+
+              // Use userData directly
+              if (userData.is_admin) {
+                console.log("Redirecting to admin dashboard")
+                router.push("/admin/dashboard")
+              } else {
+                console.log("Redirecting to home")
+                router.push("/")
+              }
+            }
+          } else {
+            setIsCheckingSession(false)
+          }
+        } catch (error) {
+          console.error("❌ Session check error:", error)
+          setIsCheckingSession(false)
+        }
+      }
+      checkSession()
+    } else {
+      setIsCheckingSession(false)
+    }
+  }, [dispatch, isAuthenticated, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -135,7 +122,7 @@ export default function LoginPage() {
           ...customerData,
         }
 
-        console.log("✅ Updating Redux store with userData:", userData)
+        console.log(" Updating Redux store with userData:", userData)
         // Update Redux store
         dispatch(setUser(userData))
         console.log("admin status", userData.is_admin)
@@ -150,14 +137,14 @@ export default function LoginPage() {
       
         if (userData.is_admin) {
           console.log("Redirecting to admin dashboard")
-          router.push("/admin/dashboard")
+          router.push("/admin/dashboard/")
         } else {
           console.log("Redirecting to home")
           router.push("/")
         }
       }
     } catch (error: any) {
-      console.error("❌ Login error:", error)
+      console.error(" Login error:", error)
       toast({
         title: "Error",
         description: error.message || "Failed to log in. Please try again.",

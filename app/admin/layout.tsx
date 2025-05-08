@@ -23,7 +23,7 @@ export default function AdminLayout({
       console.log("Current Redux State:", { isAuthenticated, user })
       
       try {
-        // If we already have the user data in Redux and they're an admin, we can skip the check
+    
         if (isAuthenticated && user?.is_admin) {
           console.log("✅ User already authenticated and is admin in Redux state")
           setIsLoading(false)
