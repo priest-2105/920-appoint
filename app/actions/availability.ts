@@ -3,6 +3,8 @@
 // import { createServerSupabaseClient } from "@/lib/supabase"; // Supabase appointments might still be useful for cross-checking or if GCal fails
 import { addMinutes, format, setHours, setMinutes, isBefore, isEqual, parseISO, max, min, differenceInMinutes, startOfDay, endOfDay } from 'date-fns';
 import { google, Auth } from 'googleapis'; // Added googleapis
+import { getCalendarSettings } from "@/lib/google-calendar"
+import { createServerSupabaseClient } from "@/lib/supabase"
 
 // IMPORTANT: You need to set up OAuth2 authentication to get an authenticated client.
 // This might involve next-auth or a similar library to manage user sessions and tokens.
@@ -31,128 +33,150 @@ async function getAuthenticatedClient(): Promise<Auth.OAuth2Client> {
   // throw new Error("OAuth2 client setup is required. This function is a placeholder.");
 }
 
-const STYLIST_WORKING_HOURS = {
-  start: { hour: 9, minute: 0 },
-  end: { hour: 17, minute: 0 },
-  breakStart: { hour: 12, minute: 0 },
-  breakEnd: { hour: 13, minute: 0 },
+// Define business hours
+const BUSINESS_HOURS = {
+  start: { hour: 9, minute: 0 }, // 9:00 AM
+  end: { hour: 17, minute: 0 },   // 5:00 PM
   daysOff: [0, 6] // Sunday (0) and Saturday (6) are off
-};
+}
 
-const SLOT_INTERVAL = 30; // Propose slots every 30 minutes
+// Define break times
+const DEFAULT_BREAKS = [
+  { start: "12:00", end: "13:00" } // Lunch break
+]
+
+const SLOT_INTERVAL = 30 // 30-minute intervals
 
 interface CalendarEvent {
   start: Date;
   end: Date;
 }
 
-export async function getAvailableTimeSlots(date: string, hairstyleDuration: number): Promise<string[]> {
-  const selectedDate = parseISO(date);
-  const dayOfWeek = selectedDate.getDay();
+// Initialize Google Calendar API with service account credentials
+const calendar = google.calendar({
+  version: "v3",
+  auth: new google.auth.GoogleAuth({
+    credentials: {
+      client_email: process.env.GOOGLE_CLIENT_EMAIL,
+      private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
+    },
+    scopes: ["https://www.googleapis.com/auth/calendar"],
+  }),
+})
 
-  if (STYLIST_WORKING_HOURS.daysOff.includes(dayOfWeek)) {
-    return [];
-  }
+// Get the calendar ID from environment variables
+const CALENDAR_ID = process.env.GOOGLE_CALENDAR_ID
 
-  let oauth2Client;
+export async function getAvailableTimeSlots(date: string, duration: number) {
   try {
-    oauth2Client = await getAuthenticatedClient();
-  } catch (authError) {
-    console.error("Google Auth Error:", authError);
-    // Decide if you want to fallback to Supabase-only availability or throw
-    // For now, let's assume GCal is primary and throw if auth fails.
-    throw new Error("Failed to authenticate with Google Calendar.");
-  }
-  
-  const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+    console.log("Getting available slots for date:", date, "duration:", duration)
+    
+    // Parse the input date
+    const selectedDate = parseISO(date)
+    const dayOfWeek = selectedDate.getDay()
 
-  const timeMin = format(startOfDay(selectedDate), "yyyy-MM-dd'T'HH:mm:ssXXX");
-  const timeMax = format(endOfDay(selectedDate), "yyyy-MM-dd'T'HH:mm:ssXXX");
-
-  let busyIntervals: CalendarEvent[] = [];
-  try {
-    const freeBusyResponse = await calendar.freebusy.query({
-      requestBody: {
-        timeMin: timeMin,
-        timeMax: timeMax,
-        items: [{ id: 'primary' }], // Query primary calendar of the authenticated user
-        timeZone: 'Europe/London', // Specify your stylist's timezone
-      },
-    });
-
-    const calendarsBusy = freeBusyResponse.data.calendars?.primary?.busy;
-    if (calendarsBusy) {
-      busyIntervals = calendarsBusy.map(b => ({
-        start: parseISO(b.start!),
-        end: parseISO(b.end!),
-      }));
+    // Check if it's a day off
+    if (BUSINESS_HOURS.daysOff.includes(dayOfWeek)) {
+      console.log("Selected day is a day off")
+      return []
     }
-  } catch (error: any) {
-    console.error('Error fetching free/busy from Google Calendar:', error.message);
-    // Fallback strategy or re-throw:
-    // Could fallback to Supabase appointments or hardcoded if GCal fails
-    // For now, throwing error to indicate GCal issue.
-    throw new Error('Failed to fetch availability from Google Calendar. ' + error.message);
-  }
 
-  // Define working window for the day
-  const dayStart = setMinutes(setHours(selectedDate, STYLIST_WORKING_HOURS.start.hour), STYLIST_WORKING_HOURS.start.minute);
-  const dayEnd = setMinutes(setHours(selectedDate, STYLIST_WORKING_HOURS.end.hour), STYLIST_WORKING_HOURS.end.minute);
-  const breakStart = setMinutes(setHours(selectedDate, STYLIST_WORKING_HOURS.breakStart.hour), STYLIST_WORKING_HOURS.breakStart.minute);
-  const breakEnd = setMinutes(setHours(selectedDate, STYLIST_WORKING_HOURS.breakEnd.hour), STYLIST_WORKING_HOURS.breakEnd.minute);
+    // Get Google Calendar settings
+    const settings = await getCalendarSettings()
+    console.log("Calendar settings:", settings)
 
-  // Add break to busy intervals
-  busyIntervals.push({ start: breakStart, end: breakEnd });
-  // Sort all busy intervals
-  busyIntervals.sort((a, b) => a.start.getTime() - b.start.getTime());
+    // Generate all possible time slots
+    const allSlots = generateTimeSlots(duration)
+    console.log("Generated time slots:", allSlots)
 
-  // Merge overlapping/adjacent busy intervals
-  const mergedBusyIntervals: CalendarEvent[] = [];
-  if (busyIntervals.length > 0) {
-    mergedBusyIntervals.push({ ...busyIntervals[0] });
-    for (let i = 1; i < busyIntervals.length; i++) {
-      const lastMerged = mergedBusyIntervals[mergedBusyIntervals.length - 1];
-      const currentBusy = busyIntervals[i];
-      if (isBefore(currentBusy.start, lastMerged.end) || isEqual(currentBusy.start, lastMerged.end)) {
-        lastMerged.end = max([lastMerged.end, currentBusy.end]);
-      } else {
-        mergedBusyIntervals.push({ ...currentBusy });
-      }
+    // If Google Calendar integration is not enabled, return all slots
+    if (!settings.enabled || !settings.checkAvailability) {
+      console.log("Google Calendar integration not enabled, returning all slots")
+      return allSlots
     }
-  }
 
-  const availableSlots: string[] = [];
-  let currentPointer = dayStart;
+    // Check each slot against Google Calendar
+    const availableSlots = await Promise.all(
+      allSlots.map(async (time) => {
+        const [hours, minutes] = time.split(":").map(Number)
+        const startTime = setMinutes(setHours(selectedDate, hours), minutes)
+        const endTime = new Date(startTime.getTime() + duration * 60000)
 
-  // Iterate through gaps between merged busy intervals
-  for (const busySlot of mergedBusyIntervals) {
-    const freeWindowEnd = min([busySlot.start, dayEnd]);
-    if (isBefore(currentPointer, freeWindowEnd)) {
-      // Found a free window before this busy slot
-      generateSlotsInWindow(currentPointer, freeWindowEnd, hairstyleDuration, availableSlots);
-    }
-    currentPointer = max([currentPointer, busySlot.end]);
-  }
+        try {
+          const response = await calendar.events.list({
+            calendarId: CALENDAR_ID,
+            timeMin: startTime.toISOString(),
+            timeMax: endTime.toISOString(),
+            singleEvents: true,
+            orderBy: "startTime",
+          })
 
-  // Check for free window after the last busy slot until dayEnd
-  if (isBefore(currentPointer, dayEnd)) {
-    generateSlotsInWindow(currentPointer, dayEnd, hairstyleDuration, availableSlots);
+          const isAvailable = response.data.items?.length === 0
+          console.log(`Slot ${time} availability:`, isAvailable)
+          return isAvailable ? time : null
+        } catch (error) {
+          console.error(`Error checking availability for slot ${time}:`, error)
+          return time // If there's an error, assume the slot is available
+        }
+      })
+    )
+
+    // Filter out null values (unavailable slots)
+    const filteredSlots = availableSlots.filter((slot): slot is string => slot !== null)
+    console.log("Final available slots after Google Calendar check:", filteredSlots)
+    return filteredSlots
+
+  } catch (error) {
+    console.error("Error getting available time slots:", error)
+    throw new Error("Failed to get available time slots")
   }
-  
-  return availableSlots;
 }
 
-function generateSlotsInWindow(windowStart: Date, windowEnd: Date, duration: number, slotsArray: string[]) {
-  let slotStart = windowStart;
-  while (true) {
-    const slotEnd = addMinutes(slotStart, duration);
-    if (isBefore(slotEnd, windowEnd) || isEqual(slotEnd, windowEnd)) {
-      slotsArray.push(format(slotStart, "HH:mm"));
-      slotStart = addMinutes(slotStart, SLOT_INTERVAL); // Next potential slot
-    } else {
-      break; // Slot doesn't fit
+function generateTimeSlots(duration: number) {
+  const slots: string[] = []
+  const slotDuration = duration
+
+  // Generate slots for each hour
+  for (let hour = BUSINESS_HOURS.start.hour; hour < BUSINESS_HOURS.end.hour; hour++) {
+    // Generate slots for each 30-minute interval
+    for (let minute = 0; minute < 60; minute += SLOT_INTERVAL) {
+      // Skip if the slot would end after business hours
+      const slotEnd = new Date()
+      slotEnd.setHours(hour, minute + slotDuration, 0, 0)
+      if (slotEnd.getHours() > BUSINESS_HOURS.end.hour) continue
+
+      // Skip if the slot overlaps with any break
+      if (isOverlappingBreak(hour, minute, slotDuration)) continue
+
+      // Format the time slot
+      const timeString = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`
+      slots.push(timeString)
     }
   }
+
+  return slots
+}
+
+function isOverlappingBreak(hour: number, minute: number, duration: number) {
+  const slotStart = new Date()
+  slotStart.setHours(hour, minute, 0, 0)
+  const slotEnd = new Date(slotStart.getTime() + duration * 60000)
+
+  return DEFAULT_BREAKS.some((breakTime) => {
+    const [breakStartHour, breakStartMinute] = breakTime.start.split(":").map(Number)
+    const [breakEndHour, breakEndMinute] = breakTime.end.split(":").map(Number)
+
+    const breakStart = new Date()
+    breakStart.setHours(breakStartHour, breakStartMinute, 0, 0)
+    const breakEnd = new Date()
+    breakEnd.setHours(breakEndHour, breakEndMinute, 0, 0)
+
+    return (
+      (slotStart >= breakStart && slotStart < breakEnd) || // Slot starts during break
+      (slotEnd > breakStart && slotEnd <= breakEnd) || // Slot ends during break
+      (slotStart <= breakStart && slotEnd >= breakEnd) // Slot completely contains break
+    )
+  })
 }
 
 // Note: The Supabase appointment fetching logic previously here has been removed

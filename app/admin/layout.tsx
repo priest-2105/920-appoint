@@ -26,24 +26,24 @@ export default function AdminLayout({
       try {
     
         if (isAuthenticated && user?.is_admin) {
-          console.log("✅ User already authenticated and is admin in Redux state")
+          // console.log("✅ User already authenticated and is admin in Redux state")
           setIsLoading(false)
           return
         }
 
-        console.log("🔍 Checking Supabase session...")
+        // console.log("🔍 Checking Supabase session...")
         const supabase = createSupabaseClient()
         const { data: { session } } = await supabase.auth.getSession()
         
-        console.log("Session data:", session)
+        // console.log("Session data:", session)
 
         if (!session?.user) {
-          console.log("❌ No session found, redirecting to login")
+          // console.log("❌ No session found, redirecting to login")
           router.replace("/login")
           return
         }
 
-        console.log("✅ Session found, checking customer data...")
+        // console.log("✅ Session found, checking customer data...")
         // Get customer data
         const { data: customerData, error: customerError } = await supabase
           .from('customers')
@@ -51,11 +51,11 @@ export default function AdminLayout({
           .eq('id', session.user.id)
           .single()
 
-        console.log("Customer data:", customerData)
-        console.log("Customer error:", customerError)
+        // console.log("Customer data:", customerData)
+        // console.log("Customer error:", customerError)
 
         if (customerError || !customerData) {
-          console.log("❌ Error fetching customer data:", customerError)
+          // console.log("❌ Error fetching customer data:", customerError)
           router.replace("/login")
           return
         }
@@ -66,13 +66,13 @@ export default function AdminLayout({
           return
         }
 
-        console.log("✅ User is admin, updating Redux store...")
+        // console.log("✅ User is admin, updating Redux store...")
         // Update Redux store with user data
         dispatch(setUser({ ...session.user, ...customerData }))
         console.log("✅ Redux store updated, showing dashboard")
         setIsLoading(false)
       } catch (error) {
-        console.error("❌ Auth check error:", error)
+        // console.error("❌ Auth check error:", error)
         router.replace("/login")
       }
     }

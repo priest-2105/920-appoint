@@ -5,35 +5,51 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
-import { Check } from "lucide-react"
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 
 export default function GoogleCalendarSettingsPage() {
-  const [isLoading, setIsLoading] = useState(true)
+  const [isConnected, setIsConnected] = useState(false)
   const [settings, setSettings] = useState({
-    enabled: false,
-    checkAvailability: false,
-    addEvents: false,
+    enabled: true,
+    checkAvailability: true,
+    addEvents: true,
   })
+  const [isLoading, setIsLoading] = useState(true)
   const { toast } = useToast()
+  const supabase = createClientComponentClient()
 
   useEffect(() => {
-    const checkSettings = async () => {
+    const checkConnection = async () => {
       try {
-        const response = await fetch("/api/settings/google-calendar-status")
-        const data = await response.json()
-
-        if (data.settings) {
-          setSettings({
-            enabled: data.settings.enabled || false,
-            checkAvailability: data.settings.checkAvailability || false,
-            addEvents: data.settings.addEvents || false,
+        // Check if user is authenticated
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session) {
+          toast({
+            title: "Authentication Error",
+            description: "Please log in to access this page.",
+            variant: "destructive",
           })
+          return
         }
+
+        // Get current settings
+        const response = await fetch("/api/settings/google-calendar-settings")
+        if (!response.ok) {
+          throw new Error("Failed to fetch settings")
+        }
+        const data = await response.json()
+        // If no settings exist, use our default enabled settings
+        setSettings(data || {
+          enabled: true,
+          checkAvailability: true,
+          addEvents: true,
+        })
+        setIsConnected(true)
       } catch (error) {
-        console.error("Error checking Google Calendar settings:", error)
+        console.error("Error checking connection:", error)
         toast({
           title: "Error",
-          description: "Failed to load Google Calendar settings.",
+          description: "Failed to check Google Calendar connection status.",
           variant: "destructive",
         })
       } finally {
@@ -41,17 +57,13 @@ export default function GoogleCalendarSettingsPage() {
       }
     }
 
-    checkSettings()
-  }, [toast])
+    checkConnection()
+  }, [toast, supabase])
 
-  const handleSettingChange = async (setting: string, value: boolean) => {
+  const handleSettingChange = async (key: keyof typeof settings, value: boolean) => {
     try {
-      const newSettings = {
-        ...settings,
-        [setting]: value,
-      }
-
-      setSettings(newSettings)
+      const newSettings = { ...settings, [key]: value }
+      console.log("Updating settings to:", newSettings)
 
       const response = await fetch("/api/settings/google-calendar-settings", {
         method: "POST",
@@ -62,18 +74,21 @@ export default function GoogleCalendarSettingsPage() {
       })
 
       if (!response.ok) {
+        const error = await response.json()
+        console.error("Failed to update settings:", error)
         throw new Error("Failed to update settings")
       }
 
+      setSettings(newSettings)
       toast({
-        title: "Success",
-        description: "Google Calendar settings updated successfully.",
+        title: "Settings Updated",
+        description: "Google Calendar settings have been updated successfully.",
       })
     } catch (error) {
       console.error("Error updating Google Calendar settings:", error)
       toast({
         title: "Error",
-        description: "Failed to update Google Calendar settings.",
+        description: "Failed to update Google Calendar settings. Please try again.",
         variant: "destructive",
       })
     }
@@ -84,82 +99,62 @@ export default function GoogleCalendarSettingsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">Google Calendar Integration</h1>
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold tracking-tight">Google Calendar Settings</h2>
+        <p className="text-muted-foreground">
+          Configure how your Google Calendar integrates with the booking system.
+        </p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Google Calendar Status</CardTitle>
+          <CardTitle>Integration Settings</CardTitle>
           <CardDescription>
-            Your Google Calendar is connected and ready to use
+            Control how Google Calendar is used in your booking system.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-4">
-            <div className="p-2 rounded-full bg-green-100">
-              <Check className="h-6 w-6 text-green-600" />
-            </div>
-            <div>
-              <p className="font-medium">Connected to Google Calendar</p>
-              <p className="text-sm text-muted-foreground">
-                Your Google Calendar is connected and ready to use
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Google Calendar Settings</CardTitle>
-          <CardDescription>Configure how Google Calendar integration works</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label htmlFor="enabled">Enable Google Calendar Integration</Label>
-              <p className="text-sm text-muted-foreground">Turn on or off all Google Calendar features</p>
+              <Label>Enable Google Calendar Integration</Label>
+              <p className="text-sm text-muted-foreground">
+                Turn on Google Calendar integration for your booking system.
+              </p>
             </div>
             <Switch
-              id="enabled"
               checked={settings.enabled}
               onCheckedChange={(checked) => handleSettingChange("enabled", checked)}
             />
           </div>
 
-          {settings.enabled && (
-            <>
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="checkAvailability">Check Availability</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Check your Google Calendar for conflicts when customers book appointments
-                  </p>
-                </div>
-                <Switch
-                  id="checkAvailability"
-                  checked={settings.checkAvailability}
-                  onCheckedChange={(checked) => handleSettingChange("checkAvailability", checked)}
-                />
-              </div>
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label>Check Availability</Label>
+              <p className="text-sm text-muted-foreground">
+                Check Google Calendar for existing events when showing available times.
+              </p>
+            </div>
+            <Switch
+              checked={settings.checkAvailability}
+              onCheckedChange={(checked) => handleSettingChange("checkAvailability", checked)}
+              disabled={!settings.enabled}
+            />
+          </div>
 
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="addEvents">Add Appointments to Calendar</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Automatically add new appointments to your Google Calendar
-                  </p>
-                </div>
-                <Switch
-                  id="addEvents"
-                  checked={settings.addEvents}
-                  onCheckedChange={(checked) => handleSettingChange("addEvents", checked)}
-                />
-              </div>
-            </>
-          )}
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label>Add Events to Calendar</Label>
+              <p className="text-sm text-muted-foreground">
+                Automatically add new bookings to your Google Calendar.
+              </p>
+            </div>
+            <Switch
+              checked={settings.addEvents}
+              onCheckedChange={(checked) => handleSettingChange("addEvents", checked)}
+              disabled={!settings.enabled}
+            />
+          </div>
         </CardContent>
       </Card>
     </div>

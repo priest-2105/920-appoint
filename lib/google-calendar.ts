@@ -1,3 +1,5 @@
+"use server"
+
 import { google } from "googleapis"
 import { createServerSupabaseClient } from "@/lib/supabase"
 
@@ -84,17 +86,39 @@ export async function addEventToCalendar(event: {
 export async function getCalendarSettings() {
   const supabase = createServerSupabaseClient()
 
-  const { data: settings } = await supabase
+  const { data: settings, error } = await supabase
     .from("settings")
     .select("value")
     .eq("key", "google_calendar_settings")
     .single()
 
-  return settings?.value || {
+  console.log("Retrieved settings from database:", settings, "Error:", error)
+
+  // If there's an error or no settings, return default settings
+  if (error || !settings) {
+    console.log("No settings found, returning defaults")
+    return {
+      enabled: false,
+      checkAvailability: false,
+      addEvents: false,
+    }
+  }
+
+  // Ensure we have all required fields
+  const defaultSettings = {
     enabled: false,
     checkAvailability: false,
     addEvents: false,
   }
+
+  // Merge with defaults to ensure all fields exist
+  const mergedSettings = {
+    ...defaultSettings,
+    ...settings.value,
+  }
+
+  console.log("Returning merged settings:", mergedSettings)
+  return mergedSettings
 }
 
 export async function updateCalendarSettings(settings: {
@@ -104,27 +128,37 @@ export async function updateCalendarSettings(settings: {
 }) {
   const supabase = createServerSupabaseClient()
 
-  const { data: existingSettings } = await supabase
+  console.log("Updating settings in database:", settings)
+
+  const { data: existingSettings, error: fetchError } = await supabase
     .from("settings")
     .select("*")
     .eq("key", "google_calendar_settings")
     .single()
 
+  console.log("Existing settings:", existingSettings, "Fetch error:", fetchError)
+
   if (existingSettings) {
-    await supabase
+    const { error: updateError } = await supabase
       .from("settings")
       .update({
         value: settings,
         updated_at: new Date().toISOString(),
       })
       .eq("key", "google_calendar_settings")
+
+    console.log("Update error:", updateError)
+    if (updateError) throw updateError
   } else {
-    await supabase.from("settings").insert([
+    const { error: insertError } = await supabase.from("settings").insert([
       {
         key: "google_calendar_settings",
         value: settings,
       },
     ])
+
+    console.log("Insert error:", insertError)
+    if (insertError) throw insertError
   }
 
   return settings
