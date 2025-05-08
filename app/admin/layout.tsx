@@ -6,6 +6,7 @@ import { createSupabaseClient } from "@/lib/supabase"
 import { useAppDispatch, useAppSelector } from "@/lib/store/hooks"
 import { setUser } from "@/lib/store/features/authSlice"
 import { MainNav } from "@/components/main-nav"
+import AdminSidebar from '@/components/AdminSidebar'
 
 export default function AdminLayout({
   children,
@@ -38,7 +39,7 @@ export default function AdminLayout({
 
         if (!session?.user) {
           console.log("❌ No session found, redirecting to login")
-          // router.replace("/login")
+          router.replace("/login")
           return
         }
 
@@ -55,13 +56,13 @@ export default function AdminLayout({
 
         if (customerError || !customerData) {
           console.log("❌ Error fetching customer data:", customerError)
-          // router.replace("/login")
+          router.replace("/login")
           return
         }
 
         if (!customerData.is_admin) {
           console.log("❌ User is not an admin, redirecting to home")
-          // router.replace("/")
+          router.replace("/")
           return
         }
 
@@ -72,7 +73,7 @@ export default function AdminLayout({
         setIsLoading(false)
       } catch (error) {
         console.error("❌ Auth check error:", error)
-        // router.replace("/login")
+        router.replace("/login")
       }
     }
 
@@ -88,17 +89,18 @@ export default function AdminLayout({
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-14 items-center">
-          <MainNav />
-        </div>
-      </header>
-      <main className="flex-1">
-        <div className="container py-6">
+    <div className="flex min-h-screen bg-muted/40">
+      <AdminSidebar />
+      <div className="flex flex-1 flex-col">
+        <header className="sticky top-0 z-40 flex h-14 items-center gap-4 border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
+          <div className="container flex h-14 items-center">
+            {/* <MainNav /> */}
+          </div>
+        </header>
+        <main className="flex-1 p-4 sm:px-6 sm:py-0 md:gap-8">
           {children}
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   )
 }
