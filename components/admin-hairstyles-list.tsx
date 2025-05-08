@@ -24,7 +24,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
-import { getHairstyles } from "@/app/actions/hairstyles"
+import { getHairstyles, deleteHairstyle } from "@/app/actions/hairstyles"
+import { useToast } from "@/hooks/use-toast"
 
 // Define a type for Hairstyle (adjust fields as necessary based on your actual data structure)
 interface Hairstyle {
@@ -33,7 +34,7 @@ interface Hairstyle {
   price: number;
   duration: number;
   category: string;
-  image_url: string | null;
+  image_urls: string[]; // Changed from image_url
   materials: string | null;
   is_active?: boolean; 
 }
@@ -44,22 +45,29 @@ export function AdminHairstylesList() {
   const [error, setError] = useState<string | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [styleToDelete, setStyleToDelete] = useState<string | null>(null)
+  const { toast } = useToast()
+
+  const fetchHairstyles = async () => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const fetchedHairstyles = await getHairstyles()
+      setStyles(fetchedHairstyles || [])
+    } catch (err) {
+      console.error("Failed to fetch hairstyles:", err)
+      setError(err instanceof Error ? err.message : "An unknown error occurred while fetching hairstyles.")
+      toast({
+        title: "Error",
+        description: "Failed to load hairstyles. Please try again.",
+        variant: "destructive",
+      })
+    }
+    setIsLoading(false)
+  }
 
   useEffect(() => {
-    const fetchHairstyles = async () => {
-      setIsLoading(true)
-      setError(null)
-      try {
-        const fetchedHairstyles = await getHairstyles()
-        setStyles(fetchedHairstyles || [])
-      } catch (err) {
-        console.error("Failed to fetch hairstyles:", err)
-        setError(err instanceof Error ? err.message : "An unknown error occurred")
-      }
-      setIsLoading(false)
-    }
-
     fetchHairstyles()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleDelete = (id: string) => {
@@ -67,9 +75,26 @@ export function AdminHairstylesList() {
     setDeleteDialogOpen(true)
   }
 
-  const confirmDelete = () => {
-    if (styleToDelete !== null) {
-      setStyles(styles.filter((style) => style.id !== styleToDelete))
+  const confirmDelete = async () => {
+    if (styleToDelete === null) return
+
+    try {
+      await deleteHairstyle(styleToDelete)
+      // Optimistically update UI or re-fetch
+      // For now, re-fetching to ensure data consistency after delete and path revalidation.
+      await fetchHairstyles() 
+      toast({
+        title: "Success",
+        description: "Hairstyle has been deleted.",
+      })
+    } catch (err) {
+      console.error("Failed to delete hairstyle:", err)
+      toast({
+        title: "Error",
+        description: err instanceof Error ? err.message : "Failed to delete hairstyle. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
       setDeleteDialogOpen(false)
       setStyleToDelete(null)
     }
@@ -79,11 +104,11 @@ export function AdminHairstylesList() {
     return <p>Loading hairstyles...</p>;
   }
 
-  if (error) {
-    return <p>Error loading hairstyles: {error}</p>;
+  if (error && styles.length === 0) {
+    return <p>Error loading hairstyles: {error}. Please try refreshing the page.</p>;
   }
 
-  if (styles.length === 0) {
+  if (!isLoading && styles.length === 0 && !error) {
     return <p>No hairstyles found. <Link href="/admin/hairstyles/new" className="underline">Add a new one?</Link></p>;
   }
 
@@ -106,7 +131,7 @@ export function AdminHairstylesList() {
             <TableRow key={style.id}>
               <TableCell>
                 <img
-                  src={style.image_url || "/placeholder.svg"}
+                  src={(style.image_urls && style.image_urls.length > 0 ? style.image_urls[0] : "/placeholder.svg")}
                   alt={style.name}
                   width={60}
                   height={40}

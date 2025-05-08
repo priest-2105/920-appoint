@@ -2,14 +2,22 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { MainNav } from "@/components/main-nav"
 import { Footer } from "@/components/footer"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { getHairstyles } from "@/app/actions/hairstyles"
+import { HairstylesDisplay } from "@/components/hairstyles-display"
+
+interface Hairstyle {
+  id: string;
+  name: string;
+  price: number;
+  duration: number;
+  category: string;
+  image_urls: string[];
+  is_active?: boolean;
+  materials?: string | null;
+}
 
 export default async function HairstylesPage() {
-  const hairstyles = await getHairstyles()
+  const hairstyles: Hairstyle[] = await getHairstyles();
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -39,74 +47,7 @@ export default async function HairstylesPage() {
                 </p>
               </div>
             </div>
-            <div className="mx-auto max-w-5xl py-8">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                <div>
-                  <Label htmlFor="search">Search</Label>
-                  <Input id="search" placeholder="Search hairstyles..." className="mt-1" />
-                </div>
-                <div>
-                  <Label htmlFor="category">Category</Label>
-                  <Select defaultValue="all">
-                    <SelectTrigger id="category" className="mt-1">
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Categories</SelectItem>
-                      <SelectItem value="Short">Short</SelectItem>
-                      <SelectItem value="Medium">Medium</SelectItem>
-                      <SelectItem value="Long">Long</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="sort">Sort By</Label>
-                  <Select defaultValue="name">
-                    <SelectTrigger id="sort" className="mt-1">
-                      <SelectValue placeholder="Sort by" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="name">Name</SelectItem>
-                      <SelectItem value="price-low">Price: Low to High</SelectItem>
-                      <SelectItem value="price-high">Price: High to Low</SelectItem>
-                      <SelectItem value="duration">Duration</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-            <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 py-8 md:grid-cols-2 lg:grid-cols-3">
-              {hairstyles.map((style) => (
-                <Card key={style.id} className="overflow-hidden">
-                  <CardHeader className="p-0">
-                    <img
-                      src={style.image_url || "/placeholder.svg?height=200&width=300"}
-                      alt={style.name}
-                      width={300}
-                      height={200}
-                      className="object-cover w-full h-48"
-                    />
-                  </CardHeader>
-                  <CardContent className="p-6">
-                    <CardTitle className="text-xl">{style.name}</CardTitle>
-                    <div className="flex items-center justify-between mt-2">
-                      <span className="font-medium">£{style.price}</span>
-                      <span className="text-sm text-muted-foreground">{style.duration} min</span>
-                    </div>
-                    <div className="mt-2">
-                      <span className="inline-block px-2 py-1 text-xs font-medium rounded-full bg-muted">
-                        {style.category}
-                      </span>
-                    </div>
-                  </CardContent>
-                  <CardFooter className="p-6 pt-0">
-                    <Link href={`/book?style=${style.id}`} className="w-full">
-                      <Button className="w-full">Book This Style</Button>
-                    </Link>
-                  </CardFooter>
-                </Card>
-              ))}
-            </div>
+            <HairstylesDisplay initialHairstyles={hairstyles} />
           </div>
         </section>
       </main>

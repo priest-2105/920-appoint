@@ -49,10 +49,18 @@ export async function getHairstyleById(id: string) {
 }
 
 // Create a new hairstyle (admin only)
+// Expected hairstyle object structure includes:
+// { name: string, price: number, duration: number, category: string, description?: string, materials?: string, image_urls?: string[], is_active?: boolean }
 export async function createHairstyle(hairstyle: any) {
   const supabase = createServerSupabaseClient()
 
-  const { data, error } = await supabase.from("hairstyles").insert([hairstyle]).select()
+  // Ensure image_urls is an array, even if empty or undefined
+  const hairstyleData = {
+    ...hairstyle,
+    image_urls: Array.isArray(hairstyle.image_urls) ? hairstyle.image_urls : [],
+  };
+
+  const { data, error } = await supabase.from("hairstyles").insert([hairstyleData]).select()
 
   if (error) {
     console.error("Error creating hairstyle:", error)
@@ -74,10 +82,21 @@ export async function createHairstyle(hairstyle: any) {
 }
 
 // Update a hairstyle (admin only)
+// Expected hairstyle object structure mirrors createHairstyle
 export async function updateHairstyle(id: string, hairstyle: any) {
   const supabase = createServerSupabaseClient()
 
-  const { data, error } = await supabase.from("hairstyles").update(hairstyle).eq("id", id).select()
+  // Ensure image_urls is an array if provided, otherwise don't include it in the update payload
+  // to avoid overwriting with an empty array if not part of the update.
+  const updateData: any = { ...hairstyle };
+  if (hairstyle.hasOwnProperty('image_urls')) {
+    updateData.image_urls = Array.isArray(hairstyle.image_urls) ? hairstyle.image_urls : [];
+  } else {
+    // If image_urls is not in the partial update, remove it to avoid accidental overwrite
+    delete updateData.image_urls;
+  }
+
+  const { data, error } = await supabase.from("hairstyles").update(updateData).eq("id", id).select()
 
   if (error) {
     console.error("Error updating hairstyle:", error)
