@@ -10,7 +10,7 @@ import { Providers } from "@/components/providers"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "StyleSync - Hairstyle Booking",
+  title: "920Appoint - Hairstyle Booking",
   description: "Book your next hairstyle appointment with ease",
     generator: 'v0.dev'
 }

@@ -10,7 +10,7 @@ export function AdminSidebar() {
         <div className="flex h-14 items-center border-b px-4">
           <Link href="/admin/dashboard" className="flex items-center gap-2 font-semibold">
             <Scissors className="h-6 w-6" />
-            <span>StyleSync Admin</span>
+            <span>920Appoint Admin</span>
           </Link>
         </div>
         <div className="flex-1 overflow-auto py-2">

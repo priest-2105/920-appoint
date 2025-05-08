@@ -73,9 +73,9 @@ export default function AdminEmailPage() {
           to: formData.to,
           subject: formData.subject,
           html: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h1 style="color: #3b82f6;">StyleSync</h1>
+            <h1 style="color: #3b82f6;">920Appoint</h1>
             <div>${formData.message.replace(/\n/g, "<br>")}</div>
-            <p>Best regards,<br>StyleSync Team</p>
+            <p>Best regards,<br>920Appoint Team</p>
           </div>`,
         }),
       })

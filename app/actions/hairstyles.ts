@@ -4,6 +4,9 @@ import { createServerSupabaseClient } from "@/lib/supabase"
 import { revalidatePath } from "next/cache"
 import { sendAdminHairstyleNotification } from "@/lib/utils"
 
+// Basic UUID v4 regex pattern
+const UUID_V4_REGEX = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/;
+
 // Get all hairstyles
 export async function getHairstyles() {
   const supabase = createServerSupabaseClient()
@@ -20,13 +23,26 @@ export async function getHairstyles() {
 
 // Get a single hairstyle by ID
 export async function getHairstyleById(id: string) {
+  // Validate if the ID is a valid UUID
+  if (!UUID_V4_REGEX.test(id)) {
+    const errorMessage = `Invalid ID format: "${id}". A valid UUID is expected.`;
+    console.error(errorMessage);
+    throw new Error(errorMessage);
+  }
+
   const supabase = createServerSupabaseClient()
+  console.log(`Fetching hairstyle with ID: ${id}`)
 
   const { data, error } = await supabase.from("hairstyles").select("*").eq("id", id).single()
 
   if (error) {
-    console.error("Error fetching hairstyle:", error)
-    throw new Error("Failed to fetch hairstyle")
+    console.error(`Supabase error fetching hairstyle (ID: ${id}):`, error)
+    throw new Error(`Failed to fetch hairstyle with ID: ${id}. Supabase error: ${error.message}`)
+  }
+
+  if (!data) {
+    console.warn(`No hairstyle found with ID: ${id}, but Supabase returned no error. This scenario might indicate an unexpected issue with .single() or data shaping.`)
+    throw new Error(`No hairstyle found with ID: ${id}, and Supabase did not return an explicit error, though data is null.`)
   }
 
   return data

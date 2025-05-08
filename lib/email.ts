@@ -21,7 +21,7 @@ export async function sendEmail(options: {
     const resend = getResend()
 
     const { data, error } = await resend.emails.send({
-      from: "StyleSync <notifications@yourdomain.com>", // Replace with your verified domain
+      from: "920Appoint <notifications@yourdomain.com>", // Replace with your verified domain
       to: options.to,
       subject: options.subject,
       html: options.html,
@@ -69,13 +69,13 @@ export async function sendAppointmentConfirmation(appointment: any, customer: an
       <p>Location: 123 Hair Street, London, UK</p>
       <p>If you need to reschedule or cancel your appointment, please contact us at least 24 hours in advance.</p>
       <p>We look forward to seeing you!</p>
-      <p>Best regards,<br>StyleSync Team</p>
+      <p>Best regards,<br>920Appoint Team</p>
     </div>
   `
 
   return sendEmail({
     to: customer.email,
-    subject: "Your StyleSync Appointment Confirmation",
+    subject: "Your 920Appoint Appointment Confirmation",
     html,
   })
 }
@@ -109,13 +109,13 @@ export async function sendAppointmentReminder(appointment: any, customer: any, h
       </div>
       <p>Location: 123 Hair Street, London, UK</p>
       <p>We look forward to seeing you!</p>
-      <p>Best regards,<br>StyleSync Team</p>
+      <p>Best regards,<br>920Appoint Team</p>
     </div>
   `
 
   return sendEmail({
     to: customer.email,
-    subject: "Reminder: Your StyleSync Appointment Tomorrow",
+    subject: "Reminder: Your 920Appoint Appointment Tomorrow",
     html,
   })
 }
@@ -155,8 +155,8 @@ export async function sendAdminAppointmentNotification(appointment: any, custome
   `
 
   return sendEmail({
-    to: "admin@stylesync.com", // Replace with your actual admin email
-    subject: "New Appointment Booked - StyleSync",
+    to: "admin@920appoint.com", // Replace with your actual admin email
+    subject: "New Appointment Booked - 920Appoint",
     html,
   })
 }
@@ -180,8 +180,8 @@ export async function sendAdminPaymentNotification(appointment: any, customer: a
   `
 
   return sendEmail({
-    to: "admin@stylesync.com", // Replace with your actual admin email
-    subject: "Payment Processed - StyleSync",
+    to: "admin@920appoint.com", // Replace with your actual admin email
+    subject: "Payment Processed - 920Appoint",
     html,
   })
 }
@@ -205,8 +205,8 @@ export async function sendAdminHairstyleNotification(hairstyle: any, action: "cr
   `
 
   return sendEmail({
-    to: "admin@stylesync.com", // Replace with your actual admin email
-    subject: `Hairstyle ${action === "created" ? "Created" : "Updated"} - StyleSync`,
+    to: "admin@920appoint.com", // Replace with your actual admin email
+    subject: `Hairstyle ${action === "created" ? "Created" : "Updated"} - 920Appoint`,
     html,
   })
 }

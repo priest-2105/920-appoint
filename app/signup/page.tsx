@@ -78,7 +78,7 @@ export default function SignupPage() {
             <div className="inline-block rounded-lg bg-muted-foreground/20 p-1 text-muted-foreground">
               <Scissors className="h-5 w-5" />
             </div>
-            <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">Join StyleSync Today</h1>
+            <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">Join 920Appoint Today</h1>
             <p className="max-w-[600px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
               Create an account to book appointments, save your favorite hairstyles, and more.
             </p>

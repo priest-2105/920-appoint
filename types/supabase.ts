@@ -41,7 +41,7 @@ export interface Database {
           duration: number
           category: string
           image_url: string | null
-          materials: string | null // Add materials field
+          materials: string | null // Re-added materials field
           is_active: boolean
           created_at: string
           updated_at: string
@@ -54,7 +54,7 @@ export interface Database {
           duration: number
           category: string
           image_url?: string | null
-          materials?: string | null // Add materials field
+          materials?: string | null // Re-added materials field
           is_active?: boolean
           created_at?: string
           updated_at?: string
@@ -67,7 +67,7 @@ export interface Database {
           duration?: number
           category?: string
           image_url?: string | null
-          materials?: string | null // Add materials field
+          materials?: string | null // Re-added materials field
           is_active?: boolean
           created_at?: string
           updated_at?: string

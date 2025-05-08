@@ -22,7 +22,7 @@ export async function POST(request: Request) {
     //
     // const timestamp = Math.round(new Date().getTime() / 1000)
     // const signature = cloudinary.utils.api_sign_request(
-    //   { timestamp, upload_preset: 'stylesync' },
+    //   { timestamp, upload_preset: '920appoint' },
     //   process.env.CLOUDINARY_API_SECRET
     // )
     //

@@ -4,7 +4,7 @@ export async function uploadImage(file: File) {
     // Create a FormData object to send the file
     const formData = new FormData()
     formData.append("file", file)
-    formData.append("upload_preset", "stylesync") // Replace with your Cloudinary upload preset
+    formData.append("upload_preset", "920appoint") // Replace with your Cloudinary upload preset
 
     // Upload the image to Cloudinary
     const response = await fetch(

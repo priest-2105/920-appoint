@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -15,8 +15,9 @@ import { getHairstyleById, createHairstyle, updateHairstyle } from "@/app/action
 import { uploadImage } from "@/lib/cloudinary"
 import { useToast } from "@/hooks/use-toast"
 
-export default function EditHairstylePage({ params }: { params: { id: string } }) {
+export default function EditHairstylePage() {
   const router = useRouter()
+  const params = useParams<{ id: string }>()
   const { toast } = useToast()
   const id = params.id
   const isNew = id === "new"
@@ -32,7 +33,7 @@ export default function EditHairstylePage({ params }: { params: { id: string } }
     duration: "",
     category: "",
     description: "",
-    materials: "", // Add materials field
+    materials: "",
     image_url: "",
     is_active: true,
   })
@@ -54,7 +55,7 @@ export default function EditHairstylePage({ params }: { params: { id: string } }
             duration: hairstyle.duration.toString(),
             category: hairstyle.category,
             description: hairstyle.description || "",
-            materials: hairstyle.materials || "", // Add materials field
+            materials: hairstyle.materials || "",
             image_url: hairstyle.image_url || "",
             is_active: hairstyle.is_active,
           })
@@ -135,7 +136,7 @@ export default function EditHairstylePage({ params }: { params: { id: string } }
         duration: Number.parseInt(formData.duration),
         category: formData.category,
         description: formData.description,
-        materials: formData.materials, // Add materials field
+        materials: formData.materials,
         image_url: imageUrl,
         is_active: formData.is_active,
       }

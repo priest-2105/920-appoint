@@ -19,13 +19,26 @@ export default function AdminSidebar() {
         <Link href="/admin/dashboard" className="px-3 py-2 text-sm font-medium transition-colors hover:text-primary rounded-md">
           Dashboard
         </Link>
-        <Link href="/admin/users" className="px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary rounded-md">
-          Users
+       
+        <Link href="/admin/hairstyles" className="px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary rounded-md">
+          Manage Hairstyles
+        </Link>  
+
+        <Link href="/admin/appointments" className="px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary rounded-md">
+          Appointments
         </Link>
-        <Link href="/admin/settings" className="px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary rounded-md">
-          Settings
+
+        <Link href="/admin/email" className="px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary rounded-md">
+          Email
+        </Link> 
+        
+        <Link href="/admin/settings/appointment-policy" className="px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary rounded-md">
+          Appointment Policy
+      </Link>
+
+        <Link href="/admin/settings/google-calendar" className="px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary rounded-md">
+        Calendar
         </Link>
-        {/* Add more admin links as needed */}
       </nav>
     </div>
   );

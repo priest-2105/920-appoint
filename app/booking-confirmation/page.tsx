@@ -178,8 +178,8 @@ export default function BookingConfirmationPage() {
                   </p>
                   <p className="text-sm text-muted-foreground">
                     Need to make changes? Contact us at{" "}
-                    <a href="mailto:info@stylesync.com" className="underline">
-                      info@stylesync.com
+                    <a href="mailto:info@920appoint.com" className="underline">
+                      info@920appoint.com
                     </a>
                   </p>
                 </div>

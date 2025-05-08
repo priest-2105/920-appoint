@@ -130,4 +130,4 @@ INSERT INTO settings (key, value)
 VALUES 
   ('business_hours', '{"monday":{"open":"09:00","close":"17:00"},"tuesday":{"open":"09:00","close":"17:00"},"wednesday":{"open":"09:00","close":"17:00"},"thursday":{"open":"09:00","close":"17:00"},"friday":{"open":"09:00","close":"17:00"},"saturday":{"open":"","close":""},"sunday":{"open":"","close":""}}'),
   ('appointment_duration', '{"default": 60, "buffer": 15}'),
-  ('business_info', '{"name":"StyleSync","address":"123 Hair Street, London, UK","phone":"+44 20 1234 5678","email":"info@stylesync.com"}');
+  ('business_info', '{"name":"920Appoint","address":"123 Hair Street, London, UK","phone":"+44 20 1234 5678","email":"info@920appoint.com"}');

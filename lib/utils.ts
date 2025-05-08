@@ -11,8 +11,8 @@ export async function sendAdminHairstyleNotification(hairstyle: any, action: "cr
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        to: "admin@stylesync.com", // Replace with your actual admin email
-        subject: `Hairstyle ${action === "created" ? "Created" : "Updated"} - StyleSync`,
+        to: "admin@920appoint.com", // Replace with your actual admin email
+        subject: `Hairstyle ${action === "created" ? "Created" : "Updated"} - 920Appoint`,
         html: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h1 style="color: #3b82f6;">Hairstyle ${action === "created" ? "Created" : "Updated"}</h1>
         <p>A hairstyle has been ${action === "created" ? "added to" : "updated in"} your catalog. Here are the details:</p>

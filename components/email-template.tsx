@@ -19,7 +19,7 @@ export const EmailTemplate: React.FC<EmailTemplateProps> = ({
 }) => (
   <div style={{ fontFamily: "Arial, sans-serif", maxWidth: "600px", margin: "0 auto" }}>
     <div style={{ background: "#3b82f6", padding: "20px", textAlign: "center", color: "white" }}>
-      <h1 style={{ margin: 0 }}>StyleSync</h1>
+      <h1 style={{ margin: 0 }}>920Appoint</h1>
     </div>
 
     <div style={{ padding: "20px" }}>
@@ -51,14 +51,14 @@ export const EmailTemplate: React.FC<EmailTemplateProps> = ({
       <p>
         Best regards,
         <br />
-        StyleSync Team
+        920Appoint Team
       </p>
     </div>
 
     <div
       style={{ backgroundColor: "#f3f4f6", padding: "10px", textAlign: "center", color: "#6b7280", fontSize: "12px" }}
     >
-      <p>© {new Date().getFullYear()} StyleSync. All rights reserved.</p>
+      <p>© {new Date().getFullYear()} 920Appoint. All rights reserved.</p>
       <p>123 Hair Street, London, UK</p>
     </div>
   </div>
