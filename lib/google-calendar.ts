@@ -16,7 +16,7 @@ const calendar = google.calendar({
 })
 
 // Get the calendar ID from environment variables
-const CALENDAR_ID = process.env.GOOGLE_CALENDAR_ID
+const CALENDAR_ID = process.env.GOOGLE_CALENDAR_ID || 'kofoworolabailey20@gmail.com'
 
 export async function checkAvailability(startTime: string, endTime: string) {
   try {
@@ -29,6 +29,7 @@ export async function checkAvailability(startTime: string, endTime: string) {
       orderBy: "startTime",
     })
 
+    console.log("Calendar response:", response.data)
     return response.data.items?.length === 0
   } catch (error) {
     console.error("Error checking calendar availability:", error)
@@ -36,32 +37,29 @@ export async function checkAvailability(startTime: string, endTime: string) {
   }
 }
 
-export async function addEventToCalendar(event: {
+export async function addToGoogleCalendar(event: {
   summary: string
   description: string
-  startTime: string
-  endTime: string
-  customerName: string
-  customerEmail: string
+  start: string
+  end: string
+  attendees: { email: string }[]
 }) {
   try {
+    console.log("Adding event to Google Calendar:", CALENDAR_ID)
+    console.log("Event details:", event)
+
     const calendarEvent = {
       summary: event.summary,
       description: event.description,
       start: {
-        dateTime: event.startTime,
+        dateTime: event.start,
         timeZone: "Europe/London",
       },
       end: {
-        dateTime: event.endTime,
+        dateTime: event.end,
         timeZone: "Europe/London",
       },
-      attendees: [
-        {
-          email: event.customerEmail,
-          displayName: event.customerName,
-        },
-      ],
+      attendees: event.attendees,
       reminders: {
         useDefault: false,
         overrides: [
@@ -77,6 +75,7 @@ export async function addEventToCalendar(event: {
       sendUpdates: "all",
     })
 
+    console.log("Calendar event created:", response.data)
     return response.data
   } catch (error) {
     console.error("Error adding event to calendar:", error)

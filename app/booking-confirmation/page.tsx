@@ -188,7 +188,18 @@ export default function BookingConfirmationPage() {
                   <Link href="/">
                     <Button className="w-full">Return to Home</Button>
                   </Link>
-                  <Button variant="outline" className="w-full">
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => {
+                      const startDate = new Date(appointment.appointment_date)
+                      const endDate = new Date(startDate.getTime() + appointment.hairstyle.duration * 60000)
+                      
+                      const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=Haircut: ${appointment.hairstyle.name}&dates=${startDate.toISOString().replace(/-|:|\.\d+/g, '')}/${endDate.toISOString().replace(/-|:|\.\d+/g, '')}&details=Appointment for ${appointment.customer.first_name} ${appointment.customer.last_name}&location=123 Hair Street, London, UK`
+                      
+                      window.open(calendarUrl, '_blank')
+                    }}
+                  >
                     Add to Calendar
                   </Button>
                 </div>

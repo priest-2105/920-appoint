@@ -40,6 +40,7 @@ export async function sendEmail(options: {
 
 // Send appointment confirmation email
 export async function sendAppointmentConfirmation(appointment: any, customer: any, hairstyle: any) {
+  console.log("Sending appointment confirmation to:", customer.email)
   const appointmentDate = new Date(appointment.appointment_date)
   const formattedDate = appointmentDate.toLocaleDateString("en-US", {
     weekday: "long",
@@ -73,11 +74,18 @@ export async function sendAppointmentConfirmation(appointment: any, customer: an
     </div>
   `
 
-  return sendEmail({
-    to: customer.email,
-    subject: "Your 920Appoint Appointment Confirmation",
-    html,
-  })
+  try {
+    const result = await sendEmail({
+      to: customer.email,
+      subject: "Your 920Appoint Appointment Confirmation",
+      html,
+    })
+    console.log("Appointment confirmation email sent:", result)
+    return result
+  } catch (error) {
+    console.error("Error sending appointment confirmation:", error)
+    throw error
+  }
 }
 
 // Send appointment reminder email
@@ -124,6 +132,7 @@ export async function sendAppointmentReminder(appointment: any, customer: any, h
 
 // Send admin notification when a new appointment is made
 export async function sendAdminAppointmentNotification(appointment: any, customer: any, hairstyle: any) {
+  console.log("Sending admin notification to: kofoworolabailey20@gmail.com")
   const appointmentDate = new Date(appointment.appointment_date)
   const formattedDate = appointmentDate.toLocaleDateString("en-US", {
     weekday: "long",
@@ -154,11 +163,18 @@ export async function sendAdminAppointmentNotification(appointment: any, custome
     </div>
   `
 
-  return sendEmail({
-    to: "admin@920appoint.com", // Replace with your actual admin email
-    subject: "New Appointment Booked - 920Appoint",
-    html,
-  })
+  try {
+    const result = await sendEmail({
+      to: "kofoworolabailey20@gmail.com",
+      subject: "New Appointment Booked - 920Appoint",
+      html,
+    })
+    console.log("Admin notification email sent:", result)
+    return result
+  } catch (error) {
+    console.error("Error sending admin notification:", error)
+    throw error
+  }
 }
 
 // Send admin notification when a payment is processed
