@@ -7,6 +7,7 @@ import { Lock } from "lucide-react"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
+import { Button } from "@/components/ui/button"
 
 interface PaymentFormProps {
   amount: number
@@ -32,6 +33,59 @@ export function PaymentForm({ amount, onSuccess }: PaymentFormProps) {
     console.error("PayPal Client ID is not set. Check NEXT_PUBLIC_PAYPAL_CLIENT_ID environment variable.");
     // Optionally render an error message to the user
     return <p className="text-red-500 text-center">PayPal integration is not configured correctly.</p>;
+  }
+
+  const handleTestPayment = async () => {
+    setIsProcessing(true)
+    try {
+      // Create a mock payment details object
+      const mockPaymentDetails = {
+        id: `test_payment_${Date.now()}`,
+        status: "COMPLETED",
+        amount: formattedAmount,
+        currency: "GBP",
+        create_time: new Date().toISOString(),
+        payer: {
+          email_address: "test@example.com",
+          name: {
+            given_name: "Test",
+            surname: "User"
+          }
+        }
+      }
+
+      toast({
+        title: "Test Payment Successful",
+        description: "Your test payment has been processed successfully.",
+      })
+
+      // Send admin notification about the test payment
+      try {
+        fetch("/api/notify-admin-payment", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            payment: mockPaymentDetails,
+            amount: amount,
+          }),
+        })
+      } catch (error) {
+        console.error("Error sending admin payment notification:", error)
+      }
+
+      onSuccess(mockPaymentDetails)
+    } catch (error) {
+      console.error("Test payment failed:", error)
+      toast({
+        title: "Test Payment Failed",
+        description: "There was an error processing your test payment. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsProcessing(false)
+    }
   }
 
   const handleApprove = async (data: any, actions: any) => {
@@ -91,6 +145,28 @@ export function PaymentForm({ amount, onSuccess }: PaymentFormProps) {
 
   return (
     <div className="space-y-6">
+      <div className="flex flex-col gap-4">
+        <Button 
+          onClick={handleTestPayment} 
+          disabled={isProcessing}
+          variant="outline"
+          className="w-full"
+        >
+          {isProcessing ? "Processing..." : "Test Payment"}
+        </Button>
+        
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-background px-2 text-muted-foreground">
+              Or pay with PayPal
+            </span>
+          </div>
+        </div>
+      </div>
+
       <PayPalScriptProvider options={paypalOptions}>
         <div className={`transition-opacity ${isProcessing ? "opacity-50 pointer-events-none" : ""}`}>
           <PayPalButtons

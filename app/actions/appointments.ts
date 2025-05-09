@@ -224,155 +224,171 @@ export async function getAvailableTimeSlots(date: string) {
 export async function createAppointment(appointment: any) {
   const supabase = createServerSupabaseClient()
 
-  // First, check if the customer exists
-  let customerId = appointment.customer_id
-  let customer = null
+  try {
+    console.log('Creating appointment with data:', appointment)
 
-  if (!customerId) {
-    // Create a new customer
-    const { data: customerData, error: customerError } = await supabase
-      .from("customers")
+    // First, check if the customer exists
+    let customerId = appointment.customer_id
+    let customer = null
+
+    if (!customerId) {
+      console.log('Creating new customer:', appointment.customer)
+      // Create a new customer
+      const { data: customerData, error: customerError } = await supabase
+        .from("customers")
+        .insert([
+          {
+            email: appointment.customer.email,
+            first_name: appointment.customer.first_name,
+            last_name: appointment.customer.last_name,
+            phone: appointment.customer.phone,
+          },
+        ])
+        .select()
+
+      if (customerError) {
+        console.error("Error creating customer:", customerError)
+        throw new Error(`Failed to create customer: ${customerError.message}`)
+      }
+
+      customerId = customerData[0].id
+      customer = customerData[0]
+      console.log('New customer created:', customer)
+    } else {
+      console.log('Fetching existing customer:', customerId)
+      // Get the existing customer
+      const { data: customerData, error: customerError } = await supabase
+        .from("customers")
+        .select("*")
+        .eq("id", customerId)
+        .single()
+
+      if (customerError) {
+        console.error("Error fetching customer:", customerError)
+        throw new Error(`Failed to fetch customer: ${customerError.message}`)
+      }
+
+      customer = customerData
+      console.log('Existing customer found:', customer)
+    }
+
+    // Get the hairstyle details
+    console.log('Fetching hairstyle:', appointment.hairstyle_id)
+    const { data: hairstyle, error: hairstyleError } = await supabase
+      .from("hairstyles")
+      .select("*")
+      .eq("id", appointment.hairstyle_id)
+      .single()
+
+    if (hairstyleError) {
+      console.error("Error fetching hairstyle:", hairstyleError)
+      throw new Error(`Failed to fetch hairstyle: ${hairstyleError.message}`)
+    }
+
+    console.log('Hairstyle found:', hairstyle)
+
+    // Create the appointment
+    console.log('Creating appointment record')
+    const { data, error } = await supabase
+      .from("appointments")
       .insert([
         {
-          email: appointment.customer.email,
-          first_name: appointment.customer.first_name,
-          last_name: appointment.customer.last_name,
-          phone: appointment.customer.phone,
+          customer_id: customerId,
+          hairstyle_id: appointment.hairstyle_id,
+          appointment_date: appointment.appointment_date,
+          status: "pending",
+          payment_id: appointment.payment_id,
+          payment_status: appointment.payment_status,
+          payment_amount: appointment.payment_amount,
+          notes: appointment.notes,
+          is_guest_booking: appointment.is_guest_booking || false,
         },
       ])
       .select()
 
-    if (customerError) {
-      console.error("Error creating customer:", customerError)
-      throw new Error("Failed to create customer")
+    if (error) {
+      console.error("Error creating appointment:", error)
+      throw new Error(`Failed to create appointment: ${error.message}`)
     }
 
-    customerId = customerData[0].id
-    customer = customerData[0]
-  } else {
-    // Get the existing customer
-    const { data: customerData, error: customerError } = await supabase
-      .from("customers")
-      .select("*")
-      .eq("id", customerId)
-      .single()
+    const createdAppointment = data[0]
+    console.log('Appointment created:', createdAppointment)
 
-    if (customerError) {
-      console.error("Error fetching customer:", customerError)
-      throw new Error("Failed to fetch customer")
-    }
-
-    customer = customerData
-  }
-
-  // Get the hairstyle details
-  const { data: hairstyle, error: hairstyleError } = await supabase
-    .from("hairstyles")
-    .select("*")
-    .eq("id", appointment.hairstyle_id)
-    .single()
-
-  if (hairstyleError) {
-    console.error("Error fetching hairstyle:", hairstyleError)
-    throw new Error("Failed to fetch hairstyle")
-  }
-
-  // Create the appointment
-  const { data, error } = await supabase
-    .from("appointments")
-    .insert([
-      {
-        customer_id: customerId,
-        hairstyle_id: appointment.hairstyle_id,
-        appointment_date: appointment.appointment_date,
-        status: "pending",
-        payment_id: appointment.payment_id,
-        payment_status: appointment.payment_status,
-        payment_amount: appointment.payment_amount,
-        notes: appointment.notes,
-        is_guest_booking: appointment.is_guest_booking || false,
-      },
-    ])
-    .select()
-
-  if (error) {
-    console.error("Error creating appointment:", error)
-    throw new Error("Failed to create appointment")
-  }
-
-  const createdAppointment = data[0]
-
-  // Check if Google Calendar integration is enabled
-  const { data: settings, error: settingsError } = await supabase
-    .from("settings")
-    .select("value")
-    .eq("key", "google_calendar_settings")
-    .single()
-
-  let googleCalendarEventId = null
-
-  if (!settingsError && settings?.value?.enabled && settings?.value?.addEvents) {
-    // Get Google Calendar credentials
-    const { data: credentials, error: credentialsError } = await supabase
+    // Check if Google Calendar integration is enabled
+    const { data: settings, error: settingsError } = await supabase
       .from("settings")
       .select("value")
-      .eq("key", "google_calendar_credentials")
+      .eq("key", "google_calendar_settings")
       .single()
 
-    if (!credentialsError && credentials?.value?.access_token) {
-      try {
-        // Import the function dynamically to avoid server/client mismatch
-        const { addToGoogleCalendar } = await import("@/lib/google-calendar")
+    let googleCalendarEventId = null
 
-        // Add to Google Calendar
-        const calendarResult = await addToGoogleCalendar(
-          {
-            summary: `Haircut: ${hairstyle.name}`,
-            description: `Appointment for ${customer.first_name} ${customer.last_name}`,
-            start: appointment.appointment_date,
-            end: new Date(new Date(appointment.appointment_date).getTime() + hairstyle.duration * 60000).toISOString(),
-            attendees: [{ email: customer.email }],
-          },
-          credentials.value.access_token,
-        )
+    if (!settingsError && settings?.value?.enabled && settings?.value?.addEvents) {
+      // Get Google Calendar credentials
+      const { data: credentials, error: credentialsError } = await supabase
+        .from("settings")
+        .select("value")
+        .eq("key", "google_calendar_credentials")
+        .single()
 
-        if (calendarResult.eventId) {
-          googleCalendarEventId = calendarResult.eventId
+      if (!credentialsError && credentials?.value?.access_token) {
+        try {
+          // Import the function dynamically to avoid server/client mismatch
+          const { addToGoogleCalendar } = await import("@/lib/google-calendar")
 
-          // Update the appointment with the Google Calendar event ID
-          await supabase
-            .from("appointments")
-            .update({ google_calendar_event_id: calendarResult.eventId })
-            .eq("id", createdAppointment.id)
+          // Add to Google Calendar
+          const calendarResult = await addToGoogleCalendar(
+            {
+              summary: `Haircut: ${hairstyle.name}`,
+              description: `Appointment for ${customer.first_name} ${customer.last_name}`,
+              start: appointment.appointment_date,
+              end: new Date(new Date(appointment.appointment_date).getTime() + hairstyle.duration * 60000).toISOString(),
+              attendees: [{ email: customer.email }],
+            },
+            credentials.value.access_token,
+          )
+
+          if (calendarResult.eventId) {
+            googleCalendarEventId = calendarResult.eventId
+
+            // Update the appointment with the Google Calendar event ID
+            await supabase
+              .from("appointments")
+              .update({ google_calendar_event_id: calendarResult.eventId })
+              .eq("id", createdAppointment.id)
+          }
+        } catch (error) {
+          console.error("Error adding to Google Calendar:", error)
+          // Don't throw here, we still want to create the appointment
         }
-      } catch (error) {
-        console.error("Error adding to Google Calendar:", error)
-        // Don't throw here, we still want to create the appointment
       }
     }
-  }
 
-  // Send confirmation email to customer
-  try {
-    await sendAppointmentConfirmation(createdAppointment, customer, hairstyle)
+    // Send confirmation email to customer
+    try {
+      await sendAppointmentConfirmation(createdAppointment, customer, hairstyle)
+    } catch (error) {
+      console.error("Error sending confirmation email:", error)
+      // Don't throw here, we still want to create the appointment
+    }
+
+    // Send notification email to admin
+    try {
+      await sendAdminAppointmentNotification(createdAppointment, customer, hairstyle)
+    } catch (error) {
+      console.error("Error sending admin notification:", error)
+      // Don't throw here, we still want to create the appointment
+    }
+
+    revalidatePath("/admin/appointments")
+
+    return {
+      ...createdAppointment,
+      google_calendar_event_id: googleCalendarEventId,
+    }
   } catch (error) {
-    console.error("Error sending confirmation email:", error)
-    // Don't throw here, we still want to create the appointment
-  }
-
-  // Send notification email to admin
-  try {
-    await sendAdminAppointmentNotification(createdAppointment, customer, hairstyle)
-  } catch (error) {
-    console.error("Error sending admin notification:", error)
-    // Don't throw here, we still want to create the appointment
-  }
-
-  revalidatePath("/admin/appointments")
-
-  return {
-    ...createdAppointment,
-    google_calendar_event_id: googleCalendarEventId,
+    console.error("Error in createAppointment:", error)
+    throw error // Re-throw the error to be handled by the caller
   }
 }
 

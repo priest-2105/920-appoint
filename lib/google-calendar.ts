@@ -20,6 +20,7 @@ const CALENDAR_ID = process.env.GOOGLE_CALENDAR_ID
 
 export async function checkAvailability(startTime: string, endTime: string) {
   try {
+    console.log("Checking availability in Google Calendar:", CALENDAR_ID)
     const response = await calendar.events.list({
       calendarId: CALENDAR_ID,
       timeMin: startTime,

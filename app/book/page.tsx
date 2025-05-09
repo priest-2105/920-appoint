@@ -208,7 +208,7 @@ export default function BookingPage() {
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <BookingCalendar onDateSelect={handleDateSelect} hairstyleId={selectedStyle?.id} />
+                      <BookingCalendar onDateTimeSelect={handleDateSelect} hairstyleId={selectedStyle?.id} />
                     </CardContent>
                     <CardFooter className="flex justify-between">
                       <Button variant="outline" onClick={() => setActiveTab("style")}>
