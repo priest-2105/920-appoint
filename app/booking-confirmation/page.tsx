@@ -26,25 +26,13 @@ export default function BookingConfirmationPage() {
       }
 
       try {
-        // In a real app, this would fetch the appointment details from the server
-        // For demo purposes, we'll create a mock appointment
-        const mockAppointment = {
-          id: appointmentId,
-          status: "confirmed",
-          appointment_date: new Date().toISOString(),
-          customer: {
-            first_name: "John",
-            last_name: "Doe",
-            email: "john.doe@example.com",
-          },
-          hairstyle: {
-            name: "Modern Fade",
-            price: 35,
-            duration: 45,
-          },
+        const response = await fetch(`/api/appointments/${appointmentId}`)
+        if (!response.ok) {
+          throw new Error('Failed to fetch appointment')
         }
-
-        setAppointment(mockAppointment)
+        const data = await response.json()
+        console.log("Fetched appointment data:", data)
+        setAppointment(data)
       } catch (error) {
         console.error("Error fetching appointment:", error)
         toast({

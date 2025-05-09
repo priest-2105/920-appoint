@@ -1,7 +1,6 @@
-// Email notification service using Resend
 import { Resend } from "resend"
 
-// Initialize Resend with API key
+
 const getResend = () => {
   const resendApiKey = process.env.RESEND_API_KEY
 
@@ -19,22 +18,25 @@ export async function sendEmail(options: {
 }) {
   try {
     const resend = getResend()
+    console.log("Attempting to send email to:", options.to)
 
     const { data, error } = await resend.emails.send({
-      from: "920Appoint <notifications@yourdomain.com>", // Replace with your verified domain
+      from: "920Appoint <onboarding@resend.dev>", // Using Resend's default sender for testing
       to: options.to,
       subject: options.subject,
       html: options.html,
     })
 
     if (error) {
+      console.error("Resend API error:", error)
       throw error
     }
 
+    console.log("Email sent successfully:", data)
     return { success: true, id: data?.id }
   } catch (error) {
     console.error("Error sending email:", error)
-    throw new Error("Failed to send email")
+    throw new Error(`Failed to send email: ${error instanceof Error ? error.message : 'Unknown error'}`)
   }
 }
 
@@ -195,11 +197,18 @@ export async function sendAdminPaymentNotification(appointment: any, customer: a
     </div>
   `
 
-  return sendEmail({
-    to: "admin@920appoint.com", // Replace with your actual admin email
-    subject: "Payment Processed - 920Appoint",
-    html,
-  })
+  try {
+    const result = await sendEmail({
+      to: "kofoworolabailey20@gmail.com",
+      subject: "Payment Processed - 920Appoint",
+      html,
+    })
+    console.log("Admin payment notification sent:", result)
+    return result
+  } catch (error) {
+    console.error("Error sending admin payment notification:", error)
+    throw error
+  }
 }
 
 // Send admin notification when a new hairstyle is added
