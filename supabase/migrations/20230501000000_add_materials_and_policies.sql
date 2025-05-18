@@ -4,6 +4,9 @@ ALTER TABLE hairstyles ADD COLUMN IF NOT EXISTS materials TEXT;
 -- Add is_guest_booking column to appointments table
 ALTER TABLE appointments ADD COLUMN IF NOT EXISTS is_guest_booking BOOLEAN DEFAULT FALSE;
 
+-- Add is_admin column to customers table if it doesn't exist
+ALTER TABLE customers ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE;
+
 -- Create appointment policy in settings if it doesn't exist
 INSERT INTO settings (key, value)
 VALUES (

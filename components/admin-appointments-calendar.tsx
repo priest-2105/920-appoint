@@ -6,53 +6,11 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 
-// This would be fetched from Supabase in a real implementation
-const appointments = [
-  {
-    id: "APP123",
-    customer: "John Smith",
-    hairstyle: "Modern Fade",
-    date: new Date(2025, 3, 1, 10, 0),
-    status: "confirmed",
-  },
-  {
-    id: "APP124",
-    customer: "Sarah Johnson",
-    hairstyle: "Classic Bob",
-    date: new Date(2025, 3, 1, 13, 0),
-    status: "confirmed",
-  },
-  {
-    id: "APP125",
-    customer: "Michael Brown",
-    hairstyle: "Textured Pixie",
-    date: new Date(2025, 3, 2, 11, 0),
-    status: "pending",
-  },
-  {
-    id: "APP126",
-    customer: "Emma Wilson",
-    hairstyle: "Long Layers",
-    date: new Date(2025, 3, 2, 15, 0),
-    status: "confirmed",
-  },
-  {
-    id: "APP127",
-    customer: "David Lee",
-    hairstyle: "Blunt Cut",
-    date: new Date(2025, 3, 3, 9, 0),
-    status: "cancelled",
-  },
-  {
-    id: "APP128",
-    customer: "Jessica Taylor",
-    hairstyle: "Curly Shag",
-    date: new Date(2025, 3, 3, 14, 0),
-    status: "confirmed",
-  },
-]
+interface AdminAppointmentsCalendarProps {
+  appointments?: any[]
+}
 
-export function AdminAppointmentsCalendar() {
+export function AdminAppointmentsCalendar({ appointments = [] }: AdminAppointmentsCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [currentWeek, setCurrentWeek] = useState(startOfWeek(currentDate, { weekStartsOn: 1 }))
 
@@ -74,21 +32,32 @@ export function AdminAppointmentsCalendar() {
         return "bg-yellow-500"
       case "cancelled":
         return "bg-red-500"
+      case "completed":
+        return "bg-blue-500"
       default:
         return "bg-gray-500"
     }
   }
 
   const getAppointmentsForDay = (date: Date) => {
-    return appointments.filter(
-      (appointment) =>
-        appointment.date.getDate() === date.getDate() &&
-        appointment.date.getMonth() === date.getMonth() &&
-        appointment.date.getFullYear() === date.getFullYear(),
-    )
+    return appointments.filter((appointment) => {
+      const appointmentDate = new Date(appointment.appointment_date)
+      return (
+        appointmentDate.getDate() === date.getDate() &&
+        appointmentDate.getMonth() === date.getMonth() &&
+        appointmentDate.getFullYear() === date.getFullYear()
+      )
+    })
   }
 
   const businessHours = Array.from({ length: 9 }, (_, i) => i + 9) // 9am to 5pm
+
+  const getAppointmentPosition = (appointmentDate: Date) => {
+    const hour = appointmentDate.getHours()
+    const minutes = appointmentDate.getMinutes()
+    const position = ((hour - 9) * 60 + minutes) / 60 // Convert to hours from 9am
+    return position * 5 // 5rem per hour
+  }
 
   return (
     <div className="space-y-4">
@@ -127,23 +96,35 @@ export function AdminAppointmentsCalendar() {
 
             {businessHours.map((hour) => {
               const dayAppointments = getAppointmentsForDay(day).filter(
-                (appointment) => appointment.date.getHours() === hour,
+                (appointment) => {
+                  const appointmentDate = new Date(appointment.appointment_date)
+                  return appointmentDate.getHours() === hour
+                }
               )
 
               return (
                 <div key={hour} className="h-20 border rounded-md p-1 relative">
-                  {dayAppointments.map((appointment) => (
-                    <Card
-                      key={appointment.id}
-                      className={`absolute inset-1 overflow-hidden cursor-pointer ${getStatusColor(appointment.status)}`}
-                    >
-                      <CardContent className="p-2 text-white">
-                        <div className="font-medium text-xs">{format(appointment.date, "h:mm a")}</div>
-                        <div className="font-medium text-xs truncate">{appointment.customer}</div>
-                        <div className="text-xs truncate">{appointment.hairstyle}</div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                  {dayAppointments.map((appointment) => {
+                    const appointmentDate = new Date(appointment.appointment_date)
+                    const position = getAppointmentPosition(appointmentDate)
+                    
+                    return (
+                      <Card
+                        key={appointment.id}
+                        className={`absolute inset-x-1 overflow-hidden cursor-pointer ${getStatusColor(appointment.status)}`}
+                        style={{ top: `${position}rem`, height: '4rem' }}
+                      >
+                        <CardContent className="p-2 text-white">
+                          <div className="font-medium text-xs">{format(appointmentDate, "h:mm a")}</div>
+                          <div className="font-medium text-xs truncate">
+                            {appointment.customers?.first_name} {appointment.customers?.last_name}
+                          </div>
+                          <div className="text-xs truncate">{appointment.hairstyles?.name}</div>
+                          <div className="text-xs truncate">${appointment.payment_amount}</div>
+                        </CardContent>
+                      </Card>
+                    )
+                  })}
                 </div>
               )
             })}

@@ -1,7 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { AdminAppointmentsList } from "@/components/admin-appointments-list"
-import { AdminAppointmentsCalendar } from "@/components/admin-appointments-calendar"
+import { AdminAppointmentsWrapper } from "@/components/admin-appointments-wrapper"
 
 export default function AdminAppointmentsPage() {
   return (
@@ -22,7 +21,7 @@ export default function AdminAppointmentsPage() {
               <CardDescription>View and manage all your upcoming appointments</CardDescription>
             </CardHeader>
             <CardContent>
-              <AdminAppointmentsList />
+              <AdminAppointmentsWrapper view="list" />
             </CardContent>
           </Card>
         </TabsContent>
@@ -33,7 +32,7 @@ export default function AdminAppointmentsPage() {
               <CardDescription>View your appointments in a calendar format</CardDescription>
             </CardHeader>
             <CardContent>
-              <AdminAppointmentsCalendar />
+              <AdminAppointmentsWrapper view="calendar" />
             </CardContent>
           </Card>
         </TabsContent>

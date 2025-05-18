@@ -74,7 +74,7 @@ export function AdminAppointmentsList({ appointments, limit }: AdminAppointments
           <TableHead>Hairstyle</TableHead>
           <TableHead>Date & Time</TableHead>
           <TableHead>Status</TableHead>
-          <TableHead>Price</TableHead>
+          <TableHead>Payment</TableHead>
           <TableHead className="text-right">Actions</TableHead>
         </TableRow>
       </TableHeader>
@@ -94,12 +94,25 @@ export function AdminAppointmentsList({ appointments, limit }: AdminAppointments
                   <div>
                     <div className="font-medium">
                       {appointment.customers?.first_name} {appointment.customers?.last_name}
+                      {appointment.is_guest_booking && (
+                        <Badge variant="secondary" className="ml-2 text-xs">Guest</Badge>
+                      )}
                     </div>
-                    <div className="text-xs text-muted-foreground">{appointment.customers?.email}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {appointment.customers?.email}
+                      {appointment.customers?.phone && ` • ${appointment.customers.phone}`}
+                    </div>
                   </div>
                 </div>
               </TableCell>
-              <TableCell>{appointment.hairstyles?.name}</TableCell>
+              <TableCell>
+                <div>
+                  <div className="font-medium">{appointment.hairstyles?.name}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {appointment.hairstyles?.duration} mins
+                  </div>
+                </div>
+              </TableCell>
               <TableCell>
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -116,7 +129,21 @@ export function AdminAppointmentsList({ appointments, limit }: AdminAppointments
                   {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
                 </Badge>
               </TableCell>
-              <TableCell>£{appointment.payment_amount || appointment.hairstyles?.price}</TableCell>
+              <TableCell>
+                <div>
+                  <div className="font-medium">£{appointment.payment_amount}</div>
+                  <Badge 
+                    variant="outline" 
+                    className={`text-xs ${
+                      appointment.payment_status === "COMPLETED" 
+                        ? "bg-green-500 text-white" 
+                        : "bg-yellow-500 text-white"
+                    }`}
+                  >
+                    {appointment.payment_status}
+                  </Badge>
+                </div>
+              </TableCell>
               <TableCell className="text-right">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -130,6 +157,9 @@ export function AdminAppointmentsList({ appointments, limit }: AdminAppointments
                     <DropdownMenuSeparator />
                     <DropdownMenuItem>View details</DropdownMenuItem>
                     <DropdownMenuItem>Send reminder</DropdownMenuItem>
+                    {appointment.is_guest_booking && (
+                      <DropdownMenuItem>Convert to account</DropdownMenuItem>
+                    )}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => handleStatusChange(appointment.id, "confirmed")}>
                       Mark as confirmed
@@ -140,6 +170,8 @@ export function AdminAppointmentsList({ appointments, limit }: AdminAppointments
                     <DropdownMenuItem onClick={() => handleStatusChange(appointment.id, "cancelled")}>
                       Cancel appointment
                     </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem className="text-red-600">Delete appointment</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </TableCell>

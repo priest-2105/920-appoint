@@ -5,17 +5,29 @@ import { revalidatePath } from "next/cache"
 import { sendAppointmentConfirmation } from "@/lib/email"
 import { sendAdminAppointmentNotification } from "@/lib/email"
 
+interface Appointment {
+  id: string
+  customer_id: string
+  hairstyle_id: string
+  appointment_date: string
+  status: string
+  payment_id: string
+  payment_status: string
+  payment_amount: string
+  google_calendar_event_id: string | null
+  notes: string | null
+  created_at: string
+  updated_at: string
+  is_guest_booking: boolean
+}
+
 // Get all appointments (admin only)
-export async function getAppointments() {
+export async function getAppointments(): Promise<Appointment[]> {
   const supabase = createServerSupabaseClient()
 
   const { data, error } = await supabase
     .from("appointments")
-    .select(`
-      *,
-      customers (id, first_name, last_name, email, phone),
-      hairstyles (id, name, price, duration, category)
-    `)
+    .select("*")
     .order("appointment_date", { ascending: true })
 
   if (error) {
@@ -23,7 +35,7 @@ export async function getAppointments() {
     throw new Error("Failed to fetch appointments")
   }
 
-  return data
+  return data || []
 }
 
 // Get appointments for a specific customer

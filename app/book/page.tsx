@@ -167,16 +167,18 @@ export default function BookingPage() {
                   </TabsTrigger>
                 </TabsList>
                 <TabsContent value="style" className="mt-6">
-                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {hairstyles.map((style) => (
                       <Card
                         key={style.id}
-                        className={`overflow-hidden cursor-pointer transition-all ${selectedStyle?.id === style.id ? "ring-2 ring-primary" : ""}`}
+                        className={`overflow-hidden cursor-pointer transition-all ${
+                          selectedStyle?.id === style.id ? "ring-2 ring-primary" : ""
+                        }`}
                         onClick={() => handleStyleSelect(style)}
                       >
                         <CardHeader className="p-0">
                           <img
-                            src={style.image_url || "/placeholder.svg?height=200&width=300"}
+                            src={style.image_urls && style.image_urls.length > 0 ? style.image_urls[0] : "/placeholder.svg"}
                             alt={style.name}
                             width={300}
                             height={200}
@@ -188,6 +190,11 @@ export default function BookingPage() {
                           <div className="flex items-center justify-between mt-2">
                             <span className="font-medium">£{style.price}</span>
                             <span className="text-sm text-muted-foreground">{style.duration} min</span>
+                          </div>
+                          <div className="mt-2">
+                            <span className="inline-block px-2 py-1 text-xs font-medium rounded-full bg-muted">
+                              {style.category}
+                            </span>
                           </div>
                         </CardContent>
                         <CardFooter className="p-6 pt-0">
