@@ -5,6 +5,8 @@ import { format, addDays, startOfWeek, addWeeks, subWeeks } from "date-fns"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { ChevronLeft, ChevronRight } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { cn } from "@/lib/utils"
 
 interface AdminAppointmentsCalendarProps {
   appointments?: any[]
@@ -115,12 +117,60 @@ export function AdminAppointmentsCalendar({ appointments = [] }: AdminAppointmen
                         style={{ top: `${position}rem`, height: '4rem' }}
                       >
                         <CardContent className="p-2 text-white">
-                          <div className="font-medium text-xs">{format(appointmentDate, "h:mm a")}</div>
-                          <div className="font-medium text-xs truncate">
-                            {appointment.customers?.first_name} {appointment.customers?.last_name}
+                          <div className="flex items-center justify-between">
+                            <div className="font-medium truncate">
+                              {appointment.customers?.first_name} {appointment.customers?.last_name}
+                              {appointment.is_guest_booking && (
+                                <Badge variant="secondary" className="ml-1 text-xs">Guest</Badge>
+                              )}
+                            </div>
+                            <Badge variant={
+                              appointment.status === 'confirmed' ? 'default' :
+                              appointment.status === 'pending' ? 'secondary' :
+                              appointment.status === 'cancelled' ? 'destructive' :
+                              'outline'
+                            } className="text-xs">
+                              {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
+                            </Badge>
                           </div>
-                          <div className="text-xs truncate">{appointment.hairstyles?.name}</div>
-                          <div className="text-xs truncate">${appointment.payment_amount}</div>
+                          
+                          <div className="text-xs text-muted-foreground">
+                            {new Date(appointment.appointment_date).toLocaleTimeString([], { 
+                              hour: '2-digit', 
+                              minute: '2-digit' 
+                            })}
+                          </div>
+
+                          <div className="text-xs">
+                            <div className="font-medium">{appointment.hairstyles?.name}</div>
+                            <div className="text-muted-foreground">
+                              {appointment.hairstyles?.duration} mins • ${appointment.hairstyles?.price}
+                            </div>
+                          </div>
+
+                          {appointment.payment_status && (
+                            <div className="text-xs">
+                              <Badge variant={
+                                appointment.payment_status === 'completed' ? 'default' :
+                                appointment.payment_status === 'pending' ? 'secondary' :
+                                appointment.payment_status === 'refunded' ? 'destructive' :
+                                'outline'
+                              } className="text-xs">
+                                {appointment.payment_status.charAt(0).toUpperCase() + appointment.payment_status.slice(1)}
+                              </Badge>
+                              {appointment.payment_amount && (
+                                <span className="ml-1 text-muted-foreground">
+                                  ${appointment.payment_amount}
+                                </span>
+                              )}
+                            </div>
+                          )}
+
+                          {appointment.notes && (
+                            <div className="text-xs text-muted-foreground truncate">
+                              {appointment.notes}
+                            </div>
+                          )}
                         </CardContent>
                       </Card>
                     )
