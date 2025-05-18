@@ -64,6 +64,7 @@ export default function AdminEmailPage() {
     setIsSending(true)
 
     try {
+      console.log("Sending email to:", formData.to)
       const response = await fetch("/api/email/send", {
         method: "POST",
         headers: {
@@ -80,8 +81,11 @@ export default function AdminEmailPage() {
         }),
       })
 
+      const data = await response.json()
+      console.log("Email API response:", data)
+
       if (!response.ok) {
-        throw new Error("Failed to send email")
+        throw new Error(data.error || "Failed to send email")
       }
 
       toast({
@@ -99,7 +103,7 @@ export default function AdminEmailPage() {
       console.error("Error sending email:", error)
       toast({
         title: "Error",
-        description: "Failed to send email. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to send email. Please try again.",
         variant: "destructive",
       })
     } finally {
