@@ -24,6 +24,34 @@ export default function AdminEmailPage() {
     message: "",
   })
 
+  const emailTemplates = {
+    appointmentPolicy: {
+      subject: "920Appoint - Appointment Policy",
+      message: `To secure your appointment, kindly note that £20 (non-refundable) deposit payment is required.
+
+DEPOSIT GOES TOWARDS YOUR SERVICE
+NO DEPOSIT = NO APPOINTMENT
+
+Kofoworola Bailey
+62688251
+04-29-09
+
+Appointment Policy
+
+Hey there! We really appreciate your time and want to make everything smooth for you.
+Here's a quick rundown:
+
+- Please give us 4 days' notice to reschedule—no refunds for late changes.
+- No-shows won't get a refund either.
+- We have a 20-minute grace period, but arriving late might mean rescheduling or an extra charge.
+- If you can, drop off your extensions before your appointment to save time also please ensure you blow dry your hair before your appointment
+- Cash only for payments, please—no transfers!
+- Don't forget to get the exact length with pre-stretched extensions.
+
+Thanks a bunch! Can't wait to see you!`
+    }
+  }
+
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
@@ -56,6 +84,15 @@ export default function AdminEmailPage() {
     setFormData({
       ...formData,
       to: value,
+    })
+  }
+
+  const handleTemplateSelect = (template: keyof typeof emailTemplates) => {
+    const selectedTemplate = emailTemplates[template]
+    setFormData({
+      ...formData,
+      subject: selectedTemplate.subject,
+      message: selectedTemplate.message
     })
   }
 
@@ -147,6 +184,19 @@ export default function AdminEmailPage() {
                   )}
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Email Template</Label>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => handleTemplateSelect('appointmentPolicy')}
+                >
+                  Appointment Policy
+                </Button>
+              </div>
             </div>
 
             <div className="space-y-2">

@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -9,42 +8,34 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
-import { createServerSupabaseClient } from "@/lib/supabase"
 import { useToast } from "@/hooks/use-toast"
+import { getAppointmentPolicy, saveAppointmentPolicy, type AppointmentPolicy } from "@/app/actions/appointment-policy"
 
 export default function AppointmentPolicyPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const { toast } = useToast()
 
-  const [formData, setFormData] = useState({
-    cancellationPolicy: "",
-    cancellationTimeFrame: "24", // hours
-    cancellationFee: "50", // percentage
-    noShowPolicy: "",
-    noShowFee: "100", // percentage
-    lateArrivalPolicy: "",
+  const [formData, setFormData] = useState<AppointmentPolicy>({
+    contactInfo: {
+      name: "",
+      phone: "",
+      date: ""
+    },
     depositRequired: false,
-    depositAmount: "20", // percentage
+    depositAmount: "",
     refundPolicy: "",
+    lateArrivalPolicy: "",
     reschedulePolicy: "",
-    rescheduleTimeFrame: "24", // hours
+    additionalNotes: [""]
   })
 
   useEffect(() => {
     const fetchPolicy = async () => {
       try {
-        const supabase = createServerSupabaseClient()
-
-        const { data, error } = await supabase.from("settings").select("*").eq("key", "appointment_policy").single()
-
-        if (error && error.code !== "PGRST116") {
-          // PGRST116 is "No rows returned"
-          throw error
-        }
-
-        if (data) {
-          setFormData(data.value)
+        const policy = await getAppointmentPolicy()
+        if (policy) {
+          setFormData(policy)
         }
       } catch (error) {
         console.error("Error fetching appointment policy:", error)
@@ -63,10 +54,21 @@ export default function AppointmentPolicyPage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
-    setFormData({
-      ...formData,
-      [name]: value,
-    })
+    if (name.startsWith("contactInfo.")) {
+      const field = name.split(".")[1]
+      setFormData({
+        ...formData,
+        contactInfo: {
+          ...formData.contactInfo,
+          [field]: value
+        }
+      })
+    } else {
+      setFormData({
+        ...formData,
+        [name]: value,
+      })
+    }
   }
 
   const handleSwitchChange = (name: string, checked: boolean) => {
@@ -81,25 +83,7 @@ export default function AppointmentPolicyPage() {
     setIsSaving(true)
 
     try {
-      const supabase = createServerSupabaseClient()
-
-      const { data: existingPolicy } = await supabase
-        .from("settings")
-        .select("*")
-        .eq("key", "appointment_policy")
-        .single()
-
-      if (existingPolicy) {
-        // Update existing policy
-        await supabase
-          .from("settings")
-          .update({ value: formData, updated_at: new Date().toISOString() })
-          .eq("key", "appointment_policy")
-      } else {
-        // Create new policy
-        await supabase.from("settings").insert([{ key: "appointment_policy", value: formData }])
-      }
-
+      await saveAppointmentPolicy(formData)
       toast({
         title: "Policy Saved",
         description: "The appointment policy has been successfully saved.",
@@ -130,40 +114,26 @@ export default function AppointmentPolicyPage() {
         <div className="grid gap-6">
           <Card>
             <CardHeader>
-              <CardTitle>Cancellation Policy</CardTitle>
-              <CardDescription>Define your policy for appointment cancellations</CardDescription>
+              <CardTitle>Contact Information</CardTitle>
+              <CardDescription>Your business contact details</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="cancellationPolicy">Cancellation Policy</Label>
-                <Textarea
-                  id="cancellationPolicy"
-                  name="cancellationPolicy"
-                  value={formData.cancellationPolicy}
-                  onChange={handleChange}
-                  rows={4}
-                  placeholder="E.g., Customers must cancel at least 24 hours before their appointment to avoid a cancellation fee."
-                />
-              </div>
-
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="cancellationTimeFrame">Cancellation Time Frame (hours)</Label>
+                  <Label htmlFor="contactInfo.name">Name</Label>
                   <Input
-                    id="cancellationTimeFrame"
-                    name="cancellationTimeFrame"
-                    type="number"
-                    value={formData.cancellationTimeFrame}
+                    id="contactInfo.name"
+                    name="contactInfo.name"
+                    value={formData.contactInfo.name}
                     onChange={handleChange}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="cancellationFee">Cancellation Fee (% of service price)</Label>
+                  <Label htmlFor="contactInfo.phone">Phone</Label>
                   <Input
-                    id="cancellationFee"
-                    name="cancellationFee"
-                    type="number"
-                    value={formData.cancellationFee}
+                    id="contactInfo.phone"
+                    name="contactInfo.phone"
+                    value={formData.contactInfo.phone}
                     onChange={handleChange}
                   />
                 </div>
@@ -173,32 +143,66 @@ export default function AppointmentPolicyPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>No-Show Policy</CardTitle>
-              <CardDescription>Define your policy for clients who don't show up</CardDescription>
+              <CardTitle>Deposit Policy</CardTitle>
+              <CardDescription>Define your deposit requirements</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="noShowPolicy">No-Show Policy</Label>
-                <Textarea
-                  id="noShowPolicy"
-                  name="noShowPolicy"
-                  value={formData.noShowPolicy}
-                  onChange={handleChange}
-                  rows={4}
-                  placeholder="E.g., Clients who fail to show up for their appointment will be charged the full service price."
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="depositRequired"
+                  checked={formData.depositRequired}
+                  onCheckedChange={(checked) => handleSwitchChange("depositRequired", checked)}
                 />
+                <Label htmlFor="depositRequired">Require deposit for bookings</Label>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="noShowFee">No-Show Fee (% of service price)</Label>
-                <Input
-                  id="noShowFee"
-                  name="noShowFee"
-                  type="number"
-                  value={formData.noShowFee}
-                  onChange={handleChange}
-                />
-              </div>
+              {formData.depositRequired && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="depositAmount">Deposit Amount (£)</Label>
+                    <Input
+                      id="depositAmount"
+                      name="depositAmount"
+                      type="number"
+                      value={formData.depositAmount}
+                      onChange={handleChange}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="refundPolicy">Deposit Policy</Label>
+                    <Textarea
+                      id="refundPolicy"
+                      name="refundPolicy"
+                      value={formData.refundPolicy}
+                      onChange={handleChange}
+                      rows={2}
+                    />
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Additional Notes</CardTitle>
+              <CardDescription>Important information for clients</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {formData.additionalNotes.map((note, index) => (
+                <div key={index} className="space-y-2">
+                  <Label>Note {index + 1}</Label>
+                  <Textarea
+                    value={note}
+                    onChange={(e) => {
+                      const newNotes = [...formData.additionalNotes]
+                      newNotes[index] = e.target.value
+                      setFormData({ ...formData, additionalNotes: newNotes })
+                    }}
+                    rows={2}
+                  />
+                </div>
+              ))}
             </CardContent>
           </Card>
 
@@ -216,49 +220,6 @@ export default function AppointmentPolicyPage() {
                   value={formData.lateArrivalPolicy}
                   onChange={handleChange}
                   rows={4}
-                  placeholder="E.g., If you arrive more than 15 minutes late, we may need to reschedule your appointment."
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Deposit & Refund Policy</CardTitle>
-              <CardDescription>Define your deposit and refund policies</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="depositRequired"
-                  checked={formData.depositRequired}
-                  onCheckedChange={(checked) => handleSwitchChange("depositRequired", checked)}
-                />
-                <Label htmlFor="depositRequired">Require deposit for bookings</Label>
-              </div>
-
-              {formData.depositRequired && (
-                <div className="space-y-2">
-                  <Label htmlFor="depositAmount">Deposit Amount (% of service price)</Label>
-                  <Input
-                    id="depositAmount"
-                    name="depositAmount"
-                    type="number"
-                    value={formData.depositAmount}
-                    onChange={handleChange}
-                  />
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <Label htmlFor="refundPolicy">Refund Policy</Label>
-                <Textarea
-                  id="refundPolicy"
-                  name="refundPolicy"
-                  value={formData.refundPolicy}
-                  onChange={handleChange}
-                  rows={4}
-                  placeholder="E.g., Deposits are non-refundable but may be applied to a rescheduled appointment."
                 />
               </div>
             </CardContent>
@@ -278,18 +239,6 @@ export default function AppointmentPolicyPage() {
                   value={formData.reschedulePolicy}
                   onChange={handleChange}
                   rows={4}
-                  placeholder="E.g., Appointments can be rescheduled up to 24 hours before the scheduled time."
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="rescheduleTimeFrame">Reschedule Time Frame (hours)</Label>
-                <Input
-                  id="rescheduleTimeFrame"
-                  name="rescheduleTimeFrame"
-                  type="number"
-                  value={formData.rescheduleTimeFrame}
-                  onChange={handleChange}
                 />
               </div>
             </CardContent>

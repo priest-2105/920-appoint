@@ -9,8 +9,22 @@ import { createSupabaseClient } from "@/lib/supabase"
 import { useToast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
 
+interface AppointmentPolicy {
+  contactInfo: {
+    name: string
+    phone: string
+    date: string
+  }
+  depositRequired: boolean
+  depositAmount: string
+  refundPolicy: string
+  lateArrivalPolicy: string
+  reschedulePolicy: string
+  additionalNotes: string[]
+}
+
 export default function AppointmentPolicyPage() {
-  const [policy, setPolicy] = useState<any>(null)
+  const [policy, setPolicy] = useState<AppointmentPolicy | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const { toast } = useToast()
 
@@ -19,13 +33,19 @@ export default function AppointmentPolicyPage() {
       try {
         const supabase = createSupabaseClient()
 
-        const { data, error } = await supabase.from("settings").select("*").eq("key", "appointment_policy").single()
+        const { data, error } = await supabase
+          .from("settings")
+          .select("value")
+          .eq("key", "appointment_policy")
+          .single()
 
         if (error) {
           throw error
         }
 
-        setPolicy(data.value)
+        if (data) {
+          setPolicy(data.value as AppointmentPolicy)
+        }
       } catch (error) {
         console.error("Error fetching appointment policy:", error)
         toast({
@@ -67,26 +87,22 @@ export default function AppointmentPolicyPage() {
             <div className="mx-auto max-w-3xl py-8 space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Cancellation Policy</CardTitle>
+                  <CardTitle>Contact Information</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p>{policy.cancellationPolicy}</p>
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    Cancellations must be made at least {policy.cancellationTimeFrame} hours before your appointment.
-                    Late cancellations may incur a fee of {policy.cancellationFee}% of the service price.
-                  </p>
+                  <p className="font-semibold">{policy.contactInfo.name}</p>
+                  <p>{policy.contactInfo.phone}</p>
+                  <p>{policy.contactInfo.date}</p>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader>
-                  <CardTitle>No-Show Policy</CardTitle>
+                  <CardTitle>Deposit Policy</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p>{policy.noShowPolicy}</p>
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    No-shows may be charged {policy.noShowFee}% of the service price.
-                  </p>
+                  <p className="font-semibold">£{policy.depositAmount} Non-Refundable Deposit Required</p>
+                  <p className="mt-2">{policy.refundPolicy}</p>
                 </CardContent>
               </Card>
 
@@ -99,27 +115,25 @@ export default function AppointmentPolicyPage() {
                 </CardContent>
               </Card>
 
-              {policy.depositRequired && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Deposit Policy</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p>A deposit of {policy.depositAmount}% of the service price is required to secure your booking.</p>
-                    <p className="mt-2">{policy.refundPolicy}</p>
-                  </CardContent>
-                </Card>
-              )}
-
               <Card>
                 <CardHeader>
                   <CardTitle>Reschedule Policy</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p>{policy.reschedulePolicy}</p>
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    Rescheduling must be done at least {policy.rescheduleTimeFrame} hours before your appointment.
-                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Additional Information</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="list-disc pl-4 space-y-2">
+                    {policy.additionalNotes.map((note, index) => (
+                      <li key={index}>{note}</li>
+                    ))}
+                  </ul>
                 </CardContent>
               </Card>
             </div>
