@@ -88,6 +88,8 @@ export function AdminAppointmentsCalendar({ appointments = [] }: AdminAppointmen
           ))}
         </div>
 
+        
+
         {/* Days columns */}
         {weekDays.map((day) => (
           <div key={day.toString()} className="space-y-2">
