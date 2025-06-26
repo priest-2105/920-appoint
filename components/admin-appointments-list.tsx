@@ -100,7 +100,7 @@ export function AdminAppointmentsList({ appointments, limit }: AdminAppointments
                   <div>
                     <div className="font-medium">
                       {appointment.customers?.first_name} {appointment.customers?.last_name}
-                        {appointment.is_guest_booking && (
+                        {appointment.customers?.is_guest && (
                           <Badge variant="secondary" className="ml-2 text-xs">Guest</Badge>
                         )}
                       </div>
@@ -194,7 +194,7 @@ export function AdminAppointmentsList({ appointments, limit }: AdminAppointments
                         View details
                       </DropdownMenuItem>
                     <DropdownMenuItem>Send reminder</DropdownMenuItem>
-                      {appointment.is_guest_booking && (
+                      {appointment.customers?.is_guest && (
                         <DropdownMenuItem>Convert to account</DropdownMenuItem>
                       )}
                     <DropdownMenuSeparator />

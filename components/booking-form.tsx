@@ -36,10 +36,27 @@ export function BookingForm({ onSubmit, price }: BookingFormProps) {
       const { data } = await supabase.auth.getUser()
       if (data.user) {
         setUser(data.user)
-        setFormData((prev) => ({
-          ...prev,
-          email: data.user.email || "",
-        }))
+        // Get customer data to pre-fill the form
+        const { data: customerData } = await supabase
+          .from('customers')
+          .select('first_name, last_name, phone')
+          .eq('id', data.user.id)
+          .single()
+        
+        if (customerData) {
+          setFormData((prev) => ({
+            ...prev,
+            email: data.user.email || "",
+            firstName: customerData.first_name || "",
+            lastName: customerData.last_name || "",
+            phone: customerData.phone || "",
+          }))
+        } else {
+          setFormData((prev) => ({
+            ...prev,
+            email: data.user.email || "",
+          }))
+        }
       }
     }
     fetchUser()
@@ -70,11 +87,23 @@ export function BookingForm({ onSubmit, price }: BookingFormProps) {
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="firstName">First Name</Label>
-          <Input id="firstName" name="firstName" value={formData.firstName} onChange={handleChange} required />
+          <Input 
+            id="firstName" 
+            name="firstName" 
+            value={formData.firstName} 
+            onChange={handleChange} 
+            required 
+          />
         </div>
         <div className="space-y-2">
           <Label htmlFor="lastName">Last Name</Label>
-          <Input id="lastName" name="lastName" value={formData.lastName} onChange={handleChange} required />
+          <Input 
+            id="lastName" 
+            name="lastName" 
+            value={formData.lastName} 
+            onChange={handleChange} 
+            required 
+          />
         </div>
       </div>
       <div className="space-y-2">
@@ -94,7 +123,14 @@ export function BookingForm({ onSubmit, price }: BookingFormProps) {
       </div>
       <div className="space-y-2">
         <Label htmlFor="phone">Phone Number</Label>
-        <Input id="phone" name="phone" type="tel" value={formData.phone} onChange={handleChange} required />
+        <Input 
+          id="phone" 
+          name="phone" 
+          type="tel" 
+          value={formData.phone} 
+          onChange={handleChange} 
+          required 
+        />
       </div>
       {!user && (
         <div className="flex items-center space-x-2">

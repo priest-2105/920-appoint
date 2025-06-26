@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -19,6 +19,7 @@ export default function BookingConfirmationPage() {
   const [isLoading, setIsLoading] = useState(true)
   const { toast } = useToast()
   const [showCalendarModal, setShowCalendarModal] = useState(false)
+  const hasShownModal = useRef(false)
 
   useEffect(() => {
     const fetchAppointment = async () => {
@@ -55,11 +56,25 @@ export default function BookingConfirmationPage() {
       appointment &&
       appointment.hairstyle &&
       appointment.customer &&
-      !showCalendarModal
+      !hasShownModal.current
     ) {
       setShowCalendarModal(true)
+      hasShownModal.current = true
     }
-  }, [appointment, showCalendarModal])
+  }, [appointment])
+
+  const handleAddToCalendar = () => {
+    if (!appointment) return
+    const startDate = new Date(appointment.appointment_date)
+    const endDate = new Date(startDate.getTime() + appointment.hairstyle.duration * 60000)
+    const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=Haircut: ${appointment.hairstyle.name}&dates=${startDate.toISOString().replace(/-|:|\.\d+/g, '')}/${endDate.toISOString().replace(/-|:|\.\d+/g, '')}&details=Appointment for ${appointment.customer.first_name} ${appointment.customer.last_name}&location=123 Hair Street, London, UK`
+    window.open(calendarUrl, '_blank')
+    setShowCalendarModal(false)
+  }
+
+  const handleCloseModal = () => {
+    setShowCalendarModal(false)
+  }
 
   if (isLoading) {
     return (
@@ -113,7 +128,7 @@ export default function BookingConfirmationPage() {
             </div>
           </div>
 
-          <div className="mx-auto max-w-md py-8">
+          <div className="mx-auto max-w-lg py-8">
             <Card>
               <CardHeader className="pb-4">
                 <div className="flex justify-center mb-4">
@@ -192,14 +207,7 @@ export default function BookingConfirmationPage() {
                   <Button 
                     variant="outline" 
                     className="w-full"
-                    onClick={() => {
-                      const startDate = new Date(appointment.appointment_date)
-                      const endDate = new Date(startDate.getTime() + appointment.hairstyle.duration * 60000)
-                      
-                      const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=Haircut: ${appointment.hairstyle.name}&dates=${startDate.toISOString().replace(/-|:|\.\d+/g, '')}/${endDate.toISOString().replace(/-|:|\.\d+/g, '')}&details=Appointment for ${appointment.customer.first_name} ${appointment.customer.last_name}&location=123 Hair Street, London, UK`
-                      
-                      window.open(calendarUrl, '_blank')
-                    }}
+                    onClick={handleAddToCalendar}
                   >
                     Add to Calendar
                   </Button>
@@ -219,20 +227,17 @@ export default function BookingConfirmationPage() {
             <div className="flex flex-col items-center gap-4 py-4">
               <Button
                 className="w-full text-lg font-bold"
-                onClick={() => {
-                  if (!appointment) return
-                  const startDate = new Date(appointment.appointment_date)
-                  const endDate = new Date(startDate.getTime() + appointment.hairstyle.duration * 60000)
-                  const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=Haircut: ${appointment.hairstyle.name}&dates=${startDate.toISOString().replace(/-|:|\.\d+/g, '')}/${endDate.toISOString().replace(/-|:|\.\d+/g, '')}&details=Appointment for ${appointment.customer.first_name} ${appointment.customer.last_name}&location=123 Hair Street, London, UK`
-                  window.open(calendarUrl, '_blank')
-                  setShowCalendarModal(false)
-                }}
+                onClick={handleAddToCalendar}
               >
                 Add to Google Calendar
               </Button>
-              <DialogClose asChild>
-                <Button variant="outline" className="w-full bg-white text-black">Close</Button>
-              </DialogClose>
+              <Button 
+                variant="outline" 
+                className="w-full bg-white text-black"
+                onClick={handleCloseModal}
+              >
+                Close
+              </Button>
             </div>
           </DialogContent>
         </Dialog>

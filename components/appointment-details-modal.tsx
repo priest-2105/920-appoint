@@ -124,14 +124,14 @@ export function AppointmentDetailsModal({ appointmentId, onClose }: AppointmentD
         
         const { data: customerData, error: customerError } = await supabase
           .from("customers")
-          .select("id, first_name, last_name, email, phone, is_admin")
+          .select("id, first_name, last_name, email, phone, is_admin, is_guest")
           .eq("id", appointmentData.customer_id)
           .maybeSingle()
 
         console.log('Raw customer query response:', {
           data: customerData,
           error: customerError,
-          query: `SELECT id, first_name, last_name, email, phone, is_admin FROM customers WHERE id = '${appointmentData.customer_id}'`
+          query: `SELECT id, first_name, last_name, email, phone, is_admin, is_guest FROM customers WHERE id = '${appointmentData.customer_id}'`
         })
 
         // Also get the hairstyle using the hairstyle_id from the appointment
@@ -218,7 +218,7 @@ export function AppointmentDetailsModal({ appointmentId, onClose }: AppointmentD
                       <>
                         <div className="font-medium">
                           {appointment.customers.first_name} {appointment.customers.last_name}
-                          {appointment.is_guest_booking && (
+                          {appointment.customers.is_guest && (
                             <Badge variant="secondary" className="ml-2">Guest</Badge>
                           )}
                         </div>
