@@ -72,34 +72,34 @@ export function AdminAppointmentsList({ appointments, limit }: AdminAppointments
 
   return (
     <>
-      <Table>
-        <TableHeader>
-          <TableRow>
+    <Table>
+      <TableHeader>
+        <TableRow>
             <TableHead>Customer Details</TableHead>
             <TableHead>Service</TableHead>
-            <TableHead>Date & Time</TableHead>
-            <TableHead>Status</TableHead>
+          <TableHead>Date & Time</TableHead>
+          <TableHead>Status</TableHead>
             <TableHead>Payment</TableHead>
             <TableHead>Notes</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {displayAppointments.length === 0 ? (
-            <TableRow>
+          <TableHead className="text-right">Actions</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {displayAppointments.length === 0 ? (
+          <TableRow>
               <TableCell colSpan={7} className="text-center py-4">
-                No appointments found
-              </TableCell>
-            </TableRow>
-          ) : (
-            displayAppointments.map((appointment) => (
-              <TableRow key={appointment.id}>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <User className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <div className="font-medium">
-                        {appointment.customers?.first_name} {appointment.customers?.last_name}
+              No appointments found
+            </TableCell>
+          </TableRow>
+        ) : (
+          displayAppointments.map((appointment) => (
+            <TableRow key={appointment.id}>
+              <TableCell>
+                <div className="flex items-center gap-2">
+                  <User className="h-4 w-4 text-muted-foreground" />
+                  <div>
+                    <div className="font-medium">
+                      {appointment.customers?.first_name} {appointment.customers?.last_name}
                         {appointment.is_guest_booking && (
                           <Badge variant="secondary" className="ml-2 text-xs">Guest</Badge>
                         )}
@@ -122,9 +122,9 @@ export function AdminAppointmentsList({ appointments, limit }: AdminAppointments
                         Materials: {appointment.hairstyles.materials}
                       </div>
                     )}
-                  </div>
-                </TableCell>
-                <TableCell>
+                </div>
+              </TableCell>
+              <TableCell>
                   <div>
                     <div className="font-medium">
                       {new Date(appointment.appointment_date).toLocaleDateString()}
@@ -134,19 +134,19 @@ export function AdminAppointmentsList({ appointments, limit }: AdminAppointments
                         hour: '2-digit', 
                         minute: '2-digit' 
                       })}
-                    </div>
                   </div>
-                </TableCell>
-                <TableCell>
+                </div>
+              </TableCell>
+              <TableCell>
                   <Badge variant={
                     appointment.status === 'confirmed' ? 'default' :
                     appointment.status === 'pending' ? 'secondary' :
                     appointment.status === 'cancelled' ? 'destructive' :
                     'outline'
                   }>
-                    {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
-                  </Badge>
-                </TableCell>
+                  {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
+                </Badge>
+              </TableCell>
                 <TableCell>
                   <div>
                     <div className="font-medium">
@@ -179,44 +179,44 @@ export function AdminAppointmentsList({ appointments, limit }: AdminAppointments
                     <span className="text-muted-foreground text-sm">No notes</span>
                   )}
                 </TableCell>
-                <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreHorizontal className="h-4 w-4" />
-                        <span className="sr-only">Open menu</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
+              <TableCell className="text-right">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <MoreHorizontal className="h-4 w-4" />
+                      <span className="sr-only">Open menu</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={() => setSelectedAppointmentId(appointment.id)}>
                         View details
                       </DropdownMenuItem>
-                      <DropdownMenuItem>Send reminder</DropdownMenuItem>
+                    <DropdownMenuItem>Send reminder</DropdownMenuItem>
                       {appointment.is_guest_booking && (
                         <DropdownMenuItem>Convert to account</DropdownMenuItem>
                       )}
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => handleStatusChange(appointment.id, "confirmed")}>
-                        Mark as confirmed
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleStatusChange(appointment.id, "completed")}>
-                        Mark as completed
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleStatusChange(appointment.id, "cancelled")}>
-                        Cancel appointment
-                      </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => handleStatusChange(appointment.id, "confirmed")}>
+                      Mark as confirmed
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleStatusChange(appointment.id, "completed")}>
+                      Mark as completed
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleStatusChange(appointment.id, "cancelled")}>
+                      Cancel appointment
+                    </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem className="text-red-600">Delete appointment</DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </TableCell>
+            </TableRow>
+          ))
+        )}
+      </TableBody>
+    </Table>
       <AppointmentDetailsModal 
         appointmentId={selectedAppointmentId} 
         onClose={() => {

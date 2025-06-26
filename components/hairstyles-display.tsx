@@ -130,7 +130,7 @@ export function HairstylesDisplay({ initialHairstyles }: HairstylesDisplayProps)
               <CardContent className="p-6">
                 <CardTitle className="text-xl">{style.name}</CardTitle>
                 <div className="flex items-center justify-between mt-2">
-                  <span className="font-medium">£{style.price}</span>
+                  <span className="font-bold text-4xl text-primary">£{style.price}</span>
                   <span className="text-sm text-muted-foreground">{style.duration} min</span>
                 </div>
                 <div className="mt-2">

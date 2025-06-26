@@ -64,10 +64,10 @@ export default function AppointmentPolicyPage() {
         }
       })
     } else {
-      setFormData({
-        ...formData,
-        [name]: value,
-      })
+    setFormData({
+      ...formData,
+      [name]: value,
+    })
     }
   }
 
@@ -158,16 +158,16 @@ export default function AppointmentPolicyPage() {
 
               {formData.depositRequired && (
                 <>
-                  <div className="space-y-2">
+              <div className="space-y-2">
                     <Label htmlFor="depositAmount">Deposit Amount (£)</Label>
-                    <Input
+                <Input
                       id="depositAmount"
                       name="depositAmount"
-                      type="number"
+                  type="number"
                       value={formData.depositAmount}
-                      onChange={handleChange}
-                    />
-                  </div>
+                  onChange={handleChange}
+                />
+              </div>
                   <div className="space-y-2">
                     <Label htmlFor="refundPolicy">Deposit Policy</Label>
                     <Textarea

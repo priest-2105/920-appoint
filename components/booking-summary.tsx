@@ -49,7 +49,7 @@ export function BookingSummary({ style, date, customer }: BookingSummaryProps) {
         <div className="border-t pt-4">
           <div className="flex justify-between">
             <span className="font-medium">Total</span>
-            <span className="font-bold">{style.price}</span>
+            <span className="font-bold text-4xl text-primary">£{style.price}</span>
           </div>
           <p className="text-xs text-muted-foreground mt-2">Payment via PayPal</p>
         </div>

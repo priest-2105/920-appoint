@@ -171,7 +171,7 @@ export default function BookingConfirmationPage() {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm">Price:</span>
-                      <span className="text-sm font-medium">£{appointment.hairstyle.price}</span>
+                      <span className="text-4xl font-bold text-primary">£{appointment.hairstyle.price}</span>
                     </div>
                   </div>
                 </div>
