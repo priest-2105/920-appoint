@@ -2,18 +2,20 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
+import { createSupabaseClient } from "@/lib/supabase"
 
 interface BookingFormProps {
   onSubmit: (data: any) => void
 }
 
 export function BookingForm({ onSubmit }: BookingFormProps) {
+  const [user, setUser] = useState<any>(null)
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -22,6 +24,21 @@ export function BookingForm({ onSubmit }: BookingFormProps) {
     createAccount: false,
     password: "",
   })
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const supabase = createSupabaseClient()
+      const { data } = await supabase.auth.getUser()
+      if (data.user) {
+        setUser(data.user)
+        setFormData((prev) => ({
+          ...prev,
+          email: data.user.email || "",
+        }))
+      }
+    }
+    fetchUser()
+  }, [])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target
@@ -50,7 +67,18 @@ export function BookingForm({ onSubmit }: BookingFormProps) {
       </div>
       <div className="space-y-2">
         <Label htmlFor="email">Email</Label>
-        <Input id="email" name="email" type="email" value={formData.email} onChange={handleChange} required />
+        <Input
+          id="email"
+          name="email"
+          type="email"
+          value={formData.email}
+          disabled={!!user}
+          onChange={handleChange}
+          required
+        />
+        {user && (
+          <div className="text-xs text-muted-foreground mt-1">Logged in as: {user.email}</div>
+        )}
       </div>
       <div className="space-y-2">
         <Label htmlFor="phone">Phone Number</Label>
