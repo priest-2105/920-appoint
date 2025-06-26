@@ -17,6 +17,7 @@ export default function BookingConfirmationPage() {
   const [appointment, setAppointment] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
   const { toast } = useToast()
+  const [calendarOpened, setCalendarOpened] = useState(false)
 
   useEffect(() => {
     const fetchAppointment = async () => {
@@ -47,6 +48,21 @@ export default function BookingConfirmationPage() {
 
     fetchAppointment()
   }, [appointmentId, toast])
+
+  useEffect(() => {
+    if (
+      appointment &&
+      !calendarOpened &&
+      appointment.hairstyle &&
+      appointment.customer
+    ) {
+      const startDate = new Date(appointment.appointment_date)
+      const endDate = new Date(startDate.getTime() + appointment.hairstyle.duration * 60000)
+      const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=Haircut: ${appointment.hairstyle.name}&dates=${startDate.toISOString().replace(/-|:|\.|\d+/g, '')}/${endDate.toISOString().replace(/-|:|\.|\d+/g, '')}&details=Appointment for ${appointment.customer.first_name} ${appointment.customer.last_name}&location=123 Hair Street, London, UK`
+      window.open(calendarUrl, '_blank')
+      setCalendarOpened(true)
+    }
+  }, [appointment, calendarOpened])
 
   if (isLoading) {
     return (
