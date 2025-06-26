@@ -12,9 +12,10 @@ import { createSupabaseClient } from "@/lib/supabase"
 
 interface BookingFormProps {
   onSubmit: (data: any) => void
+  price?: number
 }
 
-export function BookingForm({ onSubmit }: BookingFormProps) {
+export function BookingForm({ onSubmit, price }: BookingFormProps) {
   const [user, setUser] = useState<any>(null)
   const [formData, setFormData] = useState({
     firstName: "",
@@ -107,6 +108,11 @@ export function BookingForm({ onSubmit }: BookingFormProps) {
             onChange={handleChange}
             required={formData.createAccount}
           />
+        </div>
+      )}
+      {price && (
+        <div className="my-4 flex items-center justify-center">
+          <span className="text-3xl font-bold text-primary">£{price}</span>
         </div>
       )}
       <div className="text-xs text-muted-foreground mt-4">

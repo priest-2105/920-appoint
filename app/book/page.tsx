@@ -70,7 +70,6 @@ export default function BookingPage() {
     setCustomerInfo(info)
     setActiveTab("payment")
 
-    // We no longer force account creation here - it's optional in the BookingForm
   }
 
   const handlePaymentSuccess = async (paymentDetails: any) => {
