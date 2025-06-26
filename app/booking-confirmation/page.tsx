@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { CheckCircle, Calendar, Clock, MapPin } from "lucide-react"
 import { format } from "date-fns"
 import { useToast } from "@/hooks/use-toast"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog"
 
 export default function BookingConfirmationPage() {
   const searchParams = useSearchParams()
@@ -17,7 +18,7 @@ export default function BookingConfirmationPage() {
   const [appointment, setAppointment] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
   const { toast } = useToast()
-  const [calendarOpened, setCalendarOpened] = useState(false)
+  const [showCalendarModal, setShowCalendarModal] = useState(false)
 
   useEffect(() => {
     const fetchAppointment = async () => {
@@ -52,17 +53,13 @@ export default function BookingConfirmationPage() {
   useEffect(() => {
     if (
       appointment &&
-      !calendarOpened &&
       appointment.hairstyle &&
-      appointment.customer
+      appointment.customer &&
+      !showCalendarModal
     ) {
-      const startDate = new Date(appointment.appointment_date)
-      const endDate = new Date(startDate.getTime() + appointment.hairstyle.duration * 60000)
-      const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=Haircut: ${appointment.hairstyle.name}&dates=${startDate.toISOString().replace(/-|:|\.|\d+/g, '')}/${endDate.toISOString().replace(/-|:|\.|\d+/g, '')}&details=Appointment for ${appointment.customer.first_name} ${appointment.customer.last_name}&location=123 Hair Street, London, UK`
-      window.open(calendarUrl, '_blank')
-      setCalendarOpened(true)
+      setShowCalendarModal(true)
     }
-  }, [appointment, calendarOpened])
+  }, [appointment, showCalendarModal])
 
   if (isLoading) {
     return (
@@ -211,6 +208,34 @@ export default function BookingConfirmationPage() {
             </Card>
           </div>
         </div>
+        <Dialog open={showCalendarModal} onOpenChange={setShowCalendarModal}>
+          <DialogContent className="bg-black text-white max-w-md">
+            <DialogHeader>
+              <DialogTitle>Add to Calendar</DialogTitle>
+              <DialogDescription className="text-white">
+                Would you like to add this appointment to your Google Calendar?
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex flex-col items-center gap-4 py-4">
+              <Button
+                className="w-full text-lg font-bold"
+                onClick={() => {
+                  if (!appointment) return
+                  const startDate = new Date(appointment.appointment_date)
+                  const endDate = new Date(startDate.getTime() + appointment.hairstyle.duration * 60000)
+                  const calendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=Haircut: ${appointment.hairstyle.name}&dates=${startDate.toISOString().replace(/-|:|\.\d+/g, '')}/${endDate.toISOString().replace(/-|:|\.\d+/g, '')}&details=Appointment for ${appointment.customer.first_name} ${appointment.customer.last_name}&location=123 Hair Street, London, UK`
+                  window.open(calendarUrl, '_blank')
+                  setShowCalendarModal(false)
+                }}
+              >
+                Add to Google Calendar
+              </Button>
+              <DialogClose asChild>
+                <Button variant="outline" className="w-full bg-white text-black">Close</Button>
+              </DialogClose>
+            </div>
+          </DialogContent>
+        </Dialog>
       </main>
       <Footer />
     </div>

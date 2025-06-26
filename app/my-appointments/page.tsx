@@ -129,9 +129,9 @@ export default function MyAppointmentsPage() {
         <div className="flex h-20 items-center justify-between py-6">
           <MainNav />
           <nav className="flex items-center gap-2">
-            <Link href="/book">
+            {/* <Link href="/book">
               <Button size="sm">Book New Appointment</Button>
-            </Link>
+            </Link> */}
           </nav>
         </div>
       </header>
