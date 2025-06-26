@@ -33,14 +33,25 @@ export default function MyAppointmentsPage() {
         }
 
         setUser(data.user)
-        fetchAppointments(data.user.id)
+        // Fetch customer by email
+        const { data: customer, error: customerError } = await supabase
+          .from('customers')
+          .select('id')
+          .eq('email', data.user.email)
+          .single()
+        if (customerError || !customer) {
+          setAppointments([])
+          setIsLoading(false)
+          return
+        }
+        fetchAppointments(customer.id)
       } catch (error) {
         console.error("Error checking auth:", error)
         // router.push("/login?redirect=/my-appointments")
       }
     }
 
-    const fetchAppointments = async (userId: string) => {
+    const fetchAppointments = async (customerId: string) => {
       try {
         const supabase = createSupabaseClient()
 
@@ -48,9 +59,9 @@ export default function MyAppointmentsPage() {
           .from("appointments")
           .select(`
             *,
-            hairstyles (id, name, price, duration, category, image_url)
+            hairstyles (id, name, price, duration, category, image_urls)
           `)
-          .eq("customer_id", userId)
+          .eq("customer_id", customerId)
           .order("appointment_date", { ascending: false })
 
         if (error) {
