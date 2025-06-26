@@ -84,20 +84,18 @@ export function BookingForm({ onSubmit }: BookingFormProps) {
         <Label htmlFor="phone">Phone Number</Label>
         <Input id="phone" name="phone" type="tel" value={formData.phone} onChange={handleChange} required />
       </div>
-      <div className="flex items-center space-x-2">
-        <Checkbox
-          id="createAccount"
-          name="createAccount"
-          checked={formData.createAccount}
-          onCheckedChange={(checked) =>
-            setFormData({
-              ...formData,
-              createAccount: checked as boolean,
-            })
-          }
-        />
-        <Label htmlFor="createAccount">Create an account for faster bookings in the future (optional)</Label>
-      </div>
+      {!user && (
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="createAccount"
+            checked={formData.createAccount}
+            onCheckedChange={checked => setFormData({ ...formData, createAccount: checked })}
+          />
+          <Label htmlFor="createAccount">
+            Create an account for faster bookings in the future (optional)
+          </Label>
+        </div>
+      )}
       {formData.createAccount && (
         <div className="space-y-2">
           <Label htmlFor="password">Create Password</Label>
