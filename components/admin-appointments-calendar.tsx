@@ -123,7 +123,7 @@ export function AdminAppointmentsCalendar({ appointments = [] }: AdminAppointmen
                           <div className="flex items-center justify-between">
                             <div className="font-medium truncate">
                               {appointment.customers?.first_name} {appointment.customers?.last_name}
-                              {appointment.is_guest_booking && (
+                              {appointment.customers?.is_guest && (
                                 <Badge variant="secondary" className="ml-1 text-xs">Guest</Badge>
                               )}
                             </div>

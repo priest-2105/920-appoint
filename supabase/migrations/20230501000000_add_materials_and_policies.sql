@@ -7,6 +7,9 @@ ALTER TABLE appointments ADD COLUMN IF NOT EXISTS is_guest_booking BOOLEAN DEFAU
 -- Add is_admin column to customers table if it doesn't exist
 ALTER TABLE customers ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE;
 
+-- Add is_guest column to customers table to distinguish guest customers from account holders
+ALTER TABLE customers ADD COLUMN IF NOT EXISTS is_guest BOOLEAN DEFAULT FALSE;
+
 -- Create a function to check if current user is admin (avoids recursion)
 CREATE OR REPLACE FUNCTION is_admin_user()
 RETURNS BOOLEAN AS $$

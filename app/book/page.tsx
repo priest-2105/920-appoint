@@ -15,6 +15,7 @@ import { BookingSummary } from "@/components/booking-summary"
 import { getHairstyles, getHairstyleById } from "@/app/actions/hairstyles"
 import { createAppointment } from "@/app/actions/appointments"
 import { createCustomer, getCustomerByEmail } from "@/app/actions/customers"
+import { signUp } from "@/app/actions/auth"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
 
@@ -74,6 +75,31 @@ export default function BookingPage() {
 
   const handlePaymentSuccess = async (paymentDetails: any) => {
     try {
+      // If user wants to create an account, do that first
+      if (customerInfo.createAccount) {
+        try {
+          // Create Supabase Auth account and send verification email
+          await signUp(customerInfo.email, customerInfo.password, {
+            first_name: customerInfo.firstName,
+            last_name: customerInfo.lastName,
+            phone: customerInfo.phone,
+          })
+          
+          toast({
+            title: "Account Created",
+            description: "Your account has been created. Please check your email to verify your account.",
+          })
+        } catch (error) {
+          console.error("Error creating account:", error)
+          // Continue with guest booking if account creation fails
+          toast({
+            title: "Account Creation Failed",
+            description: "Your appointment will be booked as a guest. You can create an account later.",
+            variant: "destructive",
+          })
+        }
+      }
+
       // First, create or get the customer
       let customer = await getCustomerByEmail(customerInfo.email)
 

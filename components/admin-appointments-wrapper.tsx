@@ -66,7 +66,7 @@ export function AdminAppointmentsWrapper({ view }: AdminAppointmentsWrapperProps
           .from("appointments")
           .select(`
             *,
-            customers (id, first_name, last_name, email, phone),
+            customers (id, first_name, last_name, email, phone, is_guest),
             hairstyles (id, name, price, duration, category, image_urls)
           `)
           .order("appointment_date", { ascending: true })

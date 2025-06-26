@@ -39,6 +39,7 @@ export async function signUp(email: string, password: string, userData: any) {
         last_name: userData.last_name,
         phone: userData.phone || null,
         is_admin: false, // Explicitly set is_admin to false for new users
+        is_guest: false, // Explicitly set is_guest to false for account-holding customers
       },
     ])
 

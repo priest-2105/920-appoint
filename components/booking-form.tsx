@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Eye, EyeOff } from "lucide-react"
 import { createSupabaseClient } from "@/lib/supabase"
 
 interface BookingFormProps {
@@ -17,6 +18,8 @@ interface BookingFormProps {
 
 export function BookingForm({ onSubmit, price }: BookingFormProps) {
   const [user, setUser] = useState<any>(null)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -24,6 +27,7 @@ export function BookingForm({ onSubmit, price }: BookingFormProps) {
     phone: "",
     createAccount: false,
     password: "",
+    confirmPassword: "",
   })
 
   useEffect(() => {
@@ -51,6 +55,13 @@ export function BookingForm({ onSubmit, price }: BookingFormProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Validate passwords match if creating account
+    if (formData.createAccount && formData.password !== formData.confirmPassword) {
+      alert("Passwords don't match. Please try again.")
+      return
+    }
+    
     onSubmit(formData)
   }
 
@@ -98,16 +109,47 @@ export function BookingForm({ onSubmit, price }: BookingFormProps) {
         </div>
       )}
       {formData.createAccount && (
-        <div className="space-y-2">
-          <Label htmlFor="password">Create Password</Label>
-          <Input
-            id="password"
-            name="password"
-            type="password"
-            value={formData.password}
-            onChange={handleChange}
-            required={formData.createAccount}
-          />
+        <div className="space-y-4">
+          <div className="space-y-2 relative">
+            <Label htmlFor="password">Create Password</Label>
+            <Input
+              id="password"
+              name="password"
+              type={showPassword ? "text" : "password"}
+              value={formData.password}
+              onChange={handleChange}
+              required={formData.createAccount}
+            />
+            <button
+              type="button"
+              className="absolute right-2 top-9 z-10 p-1 text-muted-foreground"
+              tabIndex={-1}
+              onClick={() => setShowPassword((v) => !v)}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+            </button>
+          </div>
+          <div className="space-y-2 relative">
+            <Label htmlFor="confirmPassword">Confirm Password</Label>
+            <Input
+              id="confirmPassword"
+              name="confirmPassword"
+              type={showConfirmPassword ? "text" : "password"}
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              required={formData.createAccount}
+            />
+            <button
+              type="button"
+              className="absolute right-2 top-9 z-10 p-1 text-muted-foreground"
+              tabIndex={-1}
+              onClick={() => setShowConfirmPassword((v) => !v)}
+              aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+            >
+              {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+            </button>
+          </div>
         </div>
       )}
       {price && (

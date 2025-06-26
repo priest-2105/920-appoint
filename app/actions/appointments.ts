@@ -254,6 +254,7 @@ export async function createAppointment(appointment: any) {
             first_name: appointment.customer.first_name,
             last_name: appointment.customer.last_name,
             phone: appointment.customer.phone,
+            is_guest: appointment.is_guest_booking || false,
           },
         ])
         .select()
