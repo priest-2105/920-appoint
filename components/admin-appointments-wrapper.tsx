@@ -64,7 +64,11 @@ export function AdminAppointmentsWrapper({ view }: AdminAppointmentsWrapperProps
         console.log('Starting to fetch appointments...')
         const { data, error } = await supabase
           .from("appointments")
-          .select("*")
+          .select(`
+            *,
+            customers (id, first_name, last_name, email, phone),
+            hairstyles (id, name, price, duration, category, image_urls)
+          `)
           .order("appointment_date", { ascending: true })
 
         console.log('Raw response:', { data, error })

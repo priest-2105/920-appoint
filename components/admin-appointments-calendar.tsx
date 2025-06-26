@@ -51,6 +51,7 @@ export function AdminAppointmentsCalendar({ appointments = [] }: AdminAppointmen
       )
     })
   }
+  
 
   const businessHours = Array.from({ length: 9 }, (_, i) => i + 9) // 9am to 5pm
 

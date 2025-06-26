@@ -78,8 +78,49 @@ export function AppointmentDetailsModal({ appointmentId, onClose }: AppointmentD
         console.log('Found appointment:', appointmentData)
         console.log('Customer ID from appointment:', appointmentData.customer_id)
 
+        // Check current user's auth status and admin privileges
+        const { data: { user: currentUser }, error: userError } = await supabase.auth.getUser()
+        console.log('Current authenticated user:', currentUser)
+        console.log('User auth error:', userError)
+
+        if (currentUser) {
+          // Check if current user is admin
+          const { data: adminCheck, error: adminError } = await supabase
+            .from("customers")
+            .select("is_admin")
+            .eq("id", currentUser.id)
+            .single()
+
+          console.log('Admin check for current user:', {
+            userId: currentUser.id,
+            isAdmin: adminCheck?.is_admin,
+            error: adminError
+          })
+        }
+
         // Then get the customer using the customer_id from the appointment
         console.log('Attempting to fetch customer with ID:', appointmentData.customer_id)
+        
+        // First, let's check if this customer_id exists in the customers table
+        const { data: customerCheck, error: customerCheckError } = await supabase
+          .from("customers")
+          .select("id")
+          .eq("id", appointmentData.customer_id)
+          .maybeSingle()
+
+        console.log('Customer existence check:', {
+          customerId: appointmentData.customer_id,
+          exists: !!customerCheck,
+          error: customerCheckError
+        })
+
+        if (!customerCheck) {
+          console.error('Customer ID does not exist in customers table:', appointmentData.customer_id)
+          // Try to find customer by email if this is a guest booking
+          if (appointmentData.is_guest_booking) {
+            console.log('This is a guest booking, customer might not be in customers table')
+          }
+        }
         
         const { data: customerData, error: customerError } = await supabase
           .from("customers")
@@ -93,19 +134,36 @@ export function AppointmentDetailsModal({ appointmentId, onClose }: AppointmentD
           query: `SELECT id, first_name, last_name, email, phone, is_admin FROM customers WHERE id = '${appointmentData.customer_id}'`
         })
 
+        // Also get the hairstyle using the hairstyle_id from the appointment
+        console.log('Attempting to fetch hairstyle with ID:', appointmentData.hairstyle_id)
+        
+        const { data: hairstyleData, error: hairstyleError } = await supabase
+          .from("hairstyles")
+          .select("id, name, description, price, duration, category, materials")
+          .eq("id", appointmentData.hairstyle_id)
+          .maybeSingle()
+
+        console.log('Raw hairstyle query response:', {
+          data: hairstyleData,
+          error: hairstyleError,
+          query: `SELECT id, name, description, price, duration, category, materials FROM hairstyles WHERE id = '${appointmentData.hairstyle_id}'`
+        })
+
         if (customerError) {
           console.error('Error fetching customer:', customerError)
           // Continue with appointment data even if customer fetch fails
           setAppointment({
             ...appointmentData,
-            customers: null
+            customers: null,
+            hairstyles: hairstyleError ? null : hairstyleData
           })
         } else {
           console.log('Successfully fetched customer:', customerData)
           // Combine the data
           setAppointment({
             ...appointmentData,
-            customers: customerData
+            customers: customerData,
+            hairstyles: hairstyleError ? null : hairstyleData
           })
         }
       } catch (error) {
